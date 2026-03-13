@@ -5,12 +5,10 @@ import ConnectModal from '@/components/ConnectModal';
 
 /**
  * /app/connect
- *
- * Route shown after GitHub OAuth callback when the user has no analyzed repos.
- * Renders the persistent 3-step modal over a dark background.
- * If the user is not authenticated, redirects to /login.
+ * Renders the 3-step ConnectModal over the dark app background.
+ * Guards against unauthenticated access.
  */
-const Connect = () => {
+export default function AppConnectPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
@@ -20,19 +18,11 @@ const Connect = () => {
     }
   }, [user, loading, navigate]);
 
-  if (loading) return null;
-  if (!user) return null;
+  if (loading || !user) return null;
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: '#0D1117',
-      }}
-    >
-      <ConnectModal />
+    <div className="min-h-[calc(100vh-52px)] bg-b-base flex items-center justify-center">
+      <ConnectModal onDismiss={() => navigate('/app/dashboard')} />
     </div>
   );
-};
-
-export default Connect;
+}

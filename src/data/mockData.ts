@@ -204,3 +204,6 @@ export const mockRepos: Record<string, AnalysisResult> = {
     ],
   },
 };
+
+// Template used by ConnectModal when creating new repo entries from the UI
+export const mockRepoTemplate = mockRepos['payments-api'];

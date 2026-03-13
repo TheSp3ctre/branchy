@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAnalysis } from '@/contexts/AnalysisContext';
+import { useBranchyStore } from '@/store/branchyStore';
+import { mockRepoTemplate } from '@/data/mockData';
 
 // ─────────────────────────────────────────────
 // Types
@@ -194,7 +195,8 @@ interface ConnectModalProps {
 
 export default function ConnectModal({ onDismiss }: ConnectModalProps) {
   const { session } = useAuth();
-  const { setAnalysisResult } = useAnalysis();
+  const addRepo = useBranchyStore((s) => s.addRepo);
+  const addRecentRepo = useBranchyStore((s) => s.addRecentRepo);
   const navigate = useNavigate();
 
   const [step, setStep] = useState<ModalStep>('select');
@@ -282,21 +284,44 @@ export default function ConnectModal({ onDismiss }: ConnectModalProps) {
   // ── Step 3 → navigate ────────────────────────
   const handleViewResults = () => {
     if (selectedRepo) {
-      setAnalysisResult({
-        repoId: String(selectedRepo.id),
+      const repoId = selectedRepo.name;
+      // Persist to Zustand store with mock data (real webhook data would fill this)
+      addRepo({
+        ...mockRepoTemplate,
+        repoId,
         repoName: selectedRepo.name,
-        ownerLogin: selectedRepo.owner.login,
-        files: analysisStats.files,
+        owner: selectedRepo.owner.login,
+        language: selectedRepo.language || 'TypeScript',
+        filesCount: analysisStats.files,
         healthScore: analysisStats.healthScore,
-        issues: analysisStats.issues,
+        healthReport: {
+          ...mockRepoTemplate.healthReport,
+          overallScore: analysisStats.healthScore,
+        },
+        analyzedAt: new Date().toISOString(),
       });
+      addRecentRepo({
+        repoId,
+        repoUrl: selectedRepo.full_name,
+        repoName: selectedRepo.name,
+        owner: selectedRepo.owner.login,
+        status: 'analyzed',
+        analyzedAt: new Date().toISOString(),
+      });
+      setFading(true);
+      setTimeout(() => {
+        setVisible(false);
+        onDismiss?.();
+        navigate(`/app/repo/${repoId}`);
+      }, 200);
+    } else {
+      setFading(true);
+      setTimeout(() => {
+        setVisible(false);
+        onDismiss?.();
+        navigate('/app/dashboard');
+      }, 200);
     }
-    setFading(true);
-    setTimeout(() => {
-      setVisible(false);
-      onDismiss?.();
-      navigate(`/app/repo/${selectedRepo?.id ?? 'unknown'}`);
-    }, 200);
   };
 
   const completedCount = tasks.filter((t) => t.status === 'complete').length;

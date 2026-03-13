@@ -34,6 +34,33 @@
     --ring: 131 51% 48.6%;
     --radius: 8px;
     --green-cta: 136 56% 33%;
+
+    /* Dashboard semantic tokens */
+    --bg-base: 0 0% 5.1%;
+    --bg-surface: 215 28% 7.1%;
+    --bg-card: 215 18% 11%;
+    --bg-elevated: 215 16% 13.3%;
+    --border-default: 215 14% 15.3%;
+    --border-subtle: 215 11% 20%;
+    --text-primary: 210 14% 81%;
+    --text-secondary: 212 10% 55.7%;
+    --text-muted: 212 8% 44.7%;
+    --text-ghost: 212 7% 31.4%;
+    --green: 140 55% 48.6%;
+    --green-bg: 150 45% 9.4%;
+    --green-border: 150 40% 18%;
+    --blue: 212 100% 67.3%;
+    --blue-bg: 212 60% 12.2%;
+    --blue-border: 212 50% 24.7%;
+    --yellow: 42 74% 57.5%;
+    --yellow-bg: 40 40% 9%;
+    --yellow-border: 40 38% 15%;
+    --red: 0 90% 62.7%;
+    --red-bg: 0 40% 8.6%;
+    --red-border: 0 40% 16.1%;
+    --purple: 258 90% 66.1%;
+    --purple-bg: 258 55% 25.9%;
+    --purple-border: 258 70% 34.9%;
   }
 
   * {

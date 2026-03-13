@@ -1,13 +1,34 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { AnalysisProvider } from "@/contexts/AnalysisContext";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { RepoLayout } from "@/components/layout/RepoLayout";
+
+// Landing + Auth
 import Index from "./pages/Index.tsx";
 import Login from "./pages/Login.tsx";
-import Connect from "./pages/Connect.tsx";
+
+// App pages
+import DashboardPage from "@/pages/app/Dashboard";
+import RepoOverview from "@/pages/app/repo/Overview";
+import ArchitecturePage from "@/pages/app/repo/Architecture";
+import DependenciesPage from "@/pages/app/repo/Dependencies";
+import OnboardingPage from "@/pages/app/repo/Onboarding";
+import HealthPage from "@/pages/app/repo/Health";
+import DeadCodePage from "@/pages/app/repo/DeadCode";
+import ChangelogsPage from "@/pages/app/repo/Changelogs";
+import RepoSettingsPage from "@/pages/app/repo/Settings";
+import AccountSettingsPage from "@/pages/app/settings/AccountSettings";
+import AccountGeneralPage from "@/pages/app/settings/AccountGeneral";
+import BillingPage from "@/pages/app/settings/BillingPage";
+import TeamPage from "@/pages/app/settings/TeamPage";
+
+// ConnectModal page
+import ConnectPage from "@/pages/AppConnect";
+
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -19,15 +40,37 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <AnalysisProvider>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/app/connect" element={<Connect />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AnalysisProvider>
+          <Routes>
+            {/* Public */}
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+
+            {/* App layout (topbar only) */}
+            <Route path="/app" element={<AppLayout />}>
+              <Route index element={<Navigate to="/app/dashboard" replace />} />
+              <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="connect" element={<ConnectPage />} />
+              <Route path="settings" element={<AccountSettingsPage />}>
+                <Route index element={<AccountGeneralPage />} />
+                <Route path="billing" element={<BillingPage />} />
+                <Route path="team" element={<TeamPage />} />
+              </Route>
+            </Route>
+
+            {/* Repo layout (topbar + sidebar) */}
+            <Route path="/app/repo/:repoId" element={<RepoLayout />}>
+              <Route index element={<RepoOverview />} />
+              <Route path="architecture" element={<ArchitecturePage />} />
+              <Route path="dependencies" element={<DependenciesPage />} />
+              <Route path="onboarding" element={<OnboardingPage />} />
+              <Route path="health" element={<HealthPage />} />
+              <Route path="dead-code" element={<DeadCodePage />} />
+              <Route path="changelogs" element={<ChangelogsPage />} />
+              <Route path="settings" element={<RepoSettingsPage />} />
+            </Route>
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
