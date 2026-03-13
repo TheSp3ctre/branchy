@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 5.1%;
+    --foreground: 210 14% 83.1%;
+    --surface: 215 19% 7.1%;
+    --card: 215 17% 11%;
+    --card-foreground: 210 14% 83.1%;
+    --popover: 215 17% 11%;
+    --popover-foreground: 210 14% 83.1%;
+    --primary: 131 51% 48.6%;
+    --primary-foreground: 0 0% 100%;
+    --primary-bg: 146 73% 9.4%;
+    --primary-border: 146 44% 18%;
+    --secondary: 215 17% 11%;
+    --secondary-foreground: 210 14% 83.1%;
+    --muted: 215 17% 11%;
+    --muted-foreground: 212 12% 55.7%;
+    --accent: 215 17% 11%;
+    --accent-foreground: 210 14% 83.1%;
+    --destructive: 359 88% 62.5%;
+    --destructive-foreground: 0 0% 100%;
+    --blue-accent: 212 100% 67.3%;
+    --yellow-accent: 41 73% 57.6%;
+    --text-hint: 215 8% 43.7%;
+    --text-ghost: 215 6% 31%;
+    --border-default: 215 14% 15.3%;
+    --border-subtle: 215 10% 21.6%;
+    --border: 215 14% 15.3%;
+    --input: 215 10% 21.6%;
+    --ring: 131 51% 48.6%;
+    --radius: 8px;
+    --green-cta: 136 56% 33%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer utilities {
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .font-body {
+    font-family: 'Inter', sans-serif;
+  }
+}
