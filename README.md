@@ -107,12 +107,7 @@ Do código fonte ao score de saúde — cada insight tem uma fonte verificável.
 ### Backend & Infraestrutura
 - **Supabase** — banco de dados PostgreSQL, autenticação e Realtime
 - **Supabase Edge Functions** (Deno) — lógica serverless
-- **N8n** — orquestração de workflows e automações
 - **Prisma ORM** — modelagem do banco de dados
-
-### IA
-- **Claude (Anthropic)** — análise de código e geração de documentação
-- **Gemini (Google)** — categorização, enriquecimento e análise de issues
 
 ### Integrações
 - **GitHub API** — commits, repositórios, webhooks
