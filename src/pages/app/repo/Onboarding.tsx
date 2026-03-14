@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { useBranchyStore } from '@/store/branchyStore';
 import { timeAgo, getModuleColor } from '@/lib/branchy-utils';
-import { Share2, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 
 export default function OnboardingPage() {
   const { repoId } = useParams();
@@ -35,9 +35,6 @@ export default function OnboardingPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-1.5 font-mono text-[12px] text-b-text-secondary border-[0.5px] border-b-border-subtle rounded-btn px-3 py-1.5 hover:bg-b-card transition-colors duration-150">
-            <Share2 size={13} /> Compartilhar
-          </button>
           <button className="flex items-center gap-1.5 font-mono text-[12px] text-b-text-secondary border-[0.5px] border-b-border-subtle rounded-btn px-3 py-1.5 hover:bg-b-card transition-colors duration-150">
             <Download size={13} /> Exportar PDF
           </button>

@@ -20,7 +20,6 @@ const analysisItems = [
 
 const settingsItems = [
   { label: 'Integrações', icon: Plug, path: '/settings' },
-  { label: 'Acesso do time', icon: Users, path: '/settings' },
 ];
 
 function SidebarNavItem({ label, icon: Icon, to }: { label: string; icon: any; to: string }) {

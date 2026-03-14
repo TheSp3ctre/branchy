@@ -1,0 +1,334 @@
+{
+  "name": "Branchy - Repo Analysis Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "analyze-repo",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "f3a1b2c4-0001-4e5f-8a9b-aaaaaaaaaaaa",
+      "name": "Webhook - Start Analysis",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [140, 300],
+      "webhookId": "branchy-analyze-main"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst crypto = require('crypto');\nconst jobId = crypto.randomUUID();\nlet repoUrl = body.repoUrl || '';\nlet repoName = body.repoName || '';\nlet owner = body.owner || '';\nconst token = body.token || '';\nif (repoUrl && (!repoName || !owner)) {\n  const match = repoUrl.match(/github\\.com\\/([^\\/]+)\\/([^\\/]+)/);\n  if (match) {\n    owner = owner || match[1];\n    repoName = repoName || match[2].replace(/\\.git$/, '');\n  }\n}\nif (!repoName || !owner) throw new Error('Missing: owner and repoName (or valid GitHub repoUrl)');\nreturn [{\n  json: {\n    jobId,\n    repoUrl: repoUrl || ('https://github.com/' + owner + '/' + repoName),\n    repoName,\n    owner,\n    token,\n    startedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "f3a1b2c4-0002-4e5f-8a9b-aaaaaaaaaaaa",
+      "name": "Extract Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [360, 300]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "tableId": "Job",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "id", "fieldValue": "={{ $json.jobId }}" },
+            { "fieldId": "status", "fieldValue": "PENDING" },
+            { "fieldId": "repoUrl", "fieldValue": "={{ $json.repoUrl }}" },
+            { "fieldId": "repoName", "fieldValue": "={{ $json.repoName }}" },
+            { "fieldId": "owner", "fieldValue": "={{ $json.owner }}" }
+          ]
+        }
+      },
+      "id": "f3a1b2c4-0003-4e5f-8a9b-aaaaaaaaaaaa",
+      "name": "Create Job [PENDING]",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [580, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-branchy-credential",
+          "name": "Supabase branchy.io"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ jobId: $('Extract Input').item.json.jobId, status: 'PENDING', message: 'Analysis started' }) }}",
+        "options": { "responseCode": 202 }
+      },
+      "id": "f3a1b2c4-0004-4e5f-8a9b-aaaaaaaaaaaa",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [800, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "Job",
+        "matchingColumns": ["id"],
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "id", "fieldValue": "={{ $('Extract Input').item.json.jobId }}" },
+            { "fieldId": "status", "fieldValue": "RUNNING" }
+          ]
+        }
+      },
+      "id": "f3a1b2c4-0005-4e5f-8a9b-aaaaaaaaaaaa",
+      "name": "Update Job [RUNNING]",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1020, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-branchy-credential",
+          "name": "Supabase branchy.io"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/{{ $('Extract Input').item.json.owner }}/{{ $('Extract Input').item.json.repoName }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $('Extract Input').item.json.token }}" },
+            { "name": "Accept", "value": "application/vnd.github.v3+json" },
+            { "name": "User-Agent", "value": "Branchy-io/1.0" }
+          ]
+        },
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "f3a1b2c4-0006-4e5f-8a9b-aaaaaaaaaaaa",
+      "name": "Get Repo Info",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1240, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/{{ $('Extract Input').item.json.owner }}/{{ $('Extract Input').item.json.repoName }}/git/trees/HEAD?recursive=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $('Extract Input').item.json.token }}" },
+            { "name": "Accept", "value": "application/vnd.github.v3+json" },
+            { "name": "User-Agent", "value": "Branchy-io/1.0" }
+          ]
+        },
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "f3a1b2c4-0007-4e5f-8a9b-aaaaaaaaaaaa",
+      "name": "Get File Tree",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1460, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/{{ $('Extract Input').item.json.owner }}/{{ $('Extract Input').item.json.repoName }}/contents/package.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $('Extract Input').item.json.token }}" },
+            { "name": "Accept", "value": "application/vnd.github.v3+json" },
+            { "name": "User-Agent", "value": "Branchy-io/1.0" }
+          ]
+        },
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "f3a1b2c4-0008-4e5f-8a9b-aaaaaaaaaaaa",
+      "name": "Get package.json",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1680, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/{{ $('Extract Input').item.json.owner }}/{{ $('Extract Input').item.json.repoName }}/contents/README.md",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $('Extract Input').item.json.token }}" },
+            { "name": "Accept", "value": "application/vnd.github.v3+json" },
+            { "name": "User-Agent", "value": "Branchy-io/1.0" }
+          ]
+        },
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "f3a1b2c4-0009-4e5f-8a9b-aaaaaaaaaaaa",
+      "name": "Get README.md",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $('Extract Input').item.json;\nconst repoInfo = $('Get Repo Info').item.json;\nconst treeData = $('Get File Tree').item.json;\n\nlet packageJsonStr = '{}';\ntry {\n  const pkgNode = $('Get package.json').item.json;\n  if (pkgNode && pkgNode.content)\n    packageJsonStr = Buffer.from(pkgNode.content, 'base64').toString('utf8').substring(0, 2500);\n} catch(e) {}\n\nlet readmeStr = 'No README found.';\ntry {\n  const readmeNode = $('Get README.md').item.json;\n  if (readmeNode && readmeNode.content)\n    readmeStr = Buffer.from(readmeNode.content, 'base64').toString('utf8').substring(0, 3000);\n} catch(e) {}\n\nconst tree = Array.isArray(treeData.tree) ? treeData.tree.filter(f => f.type === 'blob') : [];\nconst total = tree.length;\nconst sourceExts = ['.ts','.tsx','.js','.jsx','.py','.go','.java','.rs','.rb','.php','.cs','.vue','.svelte'];\nconst sourceFiles = tree.filter(f => {\n  const p = f.path.toLowerCase();\n  return sourceExts.some(e => p.endsWith(e)) &&\n    !p.includes('node_modules/') && !p.includes('dist/') &&\n    !p.includes('build/') && !p.includes('.min.');\n}).slice(0, 120);\n\nconst moduleMap = {};\nsourceFiles.forEach(f => {\n  const top = f.path.includes('/') ? f.path.split('/')[0] : 'root';\n  if (!moduleMap[top]) moduleMap[top] = [];\n  moduleMap[top].push(f.path);\n});\n\nconst now = new Date().toISOString();\nconst lang = repoInfo.language || 'Unknown';\nconst desc = repoInfo.description || 'No description.';\nconst fileListStr = sourceFiles.map(f => f.path).join('\\n').substring(0, 5000);\n\nconst userPrompt = [\n  'Analyze this GitHub repository for Branchy.io and return ONLY valid raw JSON. No markdown, no explanation.',\n  '',\n  '## Repository',\n  '- Name: ' + input.repoName,\n  '- Owner: ' + input.owner,\n  '- URL: ' + input.repoUrl,\n  '- Description: ' + desc,\n  '- Language: ' + lang,\n  '- Stars: ' + (repoInfo.stargazers_count || 0),\n  '- Total Files: ' + total,\n  '- Source Files: ' + sourceFiles.length,\n  '',\n  '## package.json',\n  packageJsonStr,\n  '',\n  '## README',\n  readmeStr,\n  '',\n  '## Directory Structure',\n  JSON.stringify(moduleMap, null, 2).substring(0, 3500),\n  '',\n  '## Source File Paths',\n  fileListStr,\n  '',\n  '## Return this JSON schema (replace ALL placeholder values with real analysis):',\n  '{',\n  '  \"repoId\": \"' + input.jobId + '\",',\n  '  \"repoName\": \"' + input.repoName + '\",',\n  '  \"owner\": \"' + input.owner + '\",',\n  '  \"language\": \"detected_language\",',\n  '  \"filesCount\": ' + total + ',',\n  '  \"healthScore\": 75,',\n  '  \"analyzedAt\": \"' + now + '\",',\n  '  \"modules\": [',\n  '    {\"id\":\"mod-1\",\"name\":\"Core\",\"type\":\"core\",\"filePath\":\"src/index.ts\",\"loc\":120,\"dependsOn\":[],\"usedBy\":[],\"summary\":\"Main entry\"}',\n  '  ],',\n  '  \"insights\": [{\"type\":\"info\",\"text\":\"Uses TypeScript\",\"fileName\":\"tsconfig.json\"}],',\n  '  \"complexityByFile\": [{\"fileName\":\"index.ts\",\"filePath\":\"src/index.ts\",\"complexity\":30,\"level\":\"low\"}],',\n  '  \"circularDeps\": [],',\n  '  \"deadCode\": [],',\n  '  \"onboardingGuide\": {',\n  '    \"sections\": [',\n  '      {\"title\":\"Overview\",\"type\":\"overview\",\"content\":\"Project overview\"},',\n  '      {\"title\":\"Tech Stack\",\"type\":\"techStack\",\"content\":{\"frontend\":[],\"backend\":[],\"database\":[],\"devtools\":[]}},',\n  '      {\"title\":\"Structure\",\"type\":\"structure\",\"content\":\"Directory structure\"},',\n  '      {\"title\":\"Key Modules\",\"type\":\"modules\",\"content\":\"Main modules\"},',\n  '      {\"title\":\"Getting Started\",\"type\":\"gettingStarted\",\"content\":\"Setup steps\"},',\n  '      {\"title\":\"Patterns\",\"type\":\"patterns\",\"content\":\"Arch patterns\"},',\n  '      {\"title\":\"Run Locally\",\"type\":\"runLocally\",\"content\":{\"steps\":[\"Clone\",\"Install\"],\"commands\":[\"npm install\",\"npm run dev\"]}}',\n  '    ],',\n  '    \"generatedAt\": \"' + now + '\"',\n  '  },',\n  '  \"healthReport\": {',\n  '    \"overallScore\": 75, \"maintainability\": 70, \"testCoverage\": 20, \"documentation\": 60,',\n  '    \"issues\": [{\"id\":\"i-1\",\"severity\":\"warning\",\"fileName\":\"file.ts\",\"filePath\":\"src/file.ts\",\"title\":\"Missing tests\",\"description\":\"No test files found\",\"suggestedFix\":\"Add unit tests\",\"resolved\":false}]',\n  '  },',\n  '  \"changelogs\": []',\n  '}',\n  '',\n  'Rules: generate 6-15 modules, 5-10 insights, 5-10 complexityByFile items, 3-6 health issues. All scores are integers 0-100.'\n].join('\\n');\n\nreturn [{\n  json: {\n    jobId: input.jobId,\n    repoUrl: input.repoUrl,\n    repoName: input.repoName,\n    owner: input.owner,\n    language: lang,\n    filesCount: total,\n    requestBody: {\n      model: 'claude-opus-4-6',\n      max_tokens: 8192,\n      system: 'You are an expert software architect. Return ONLY valid raw JSON, no markdown, no explanations.',\n      messages: [{ role: 'user', content: userPrompt }]\n    }\n  }\n}];"
+      },
+      "id": "f3a1b2c4-0010-4e5f-8a9b-aaaaaaaaaaaa",
+      "name": "Prepare AI Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2120, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $vars.ANTHROPIC_API_KEY }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {
+          "response": { "response": { "neverError": true } },
+          "timeout": 120000
+        }
+      },
+      "id": "f3a1b2c4-0011-4e5f-8a9b-aaaaaaaaaaaa",
+      "name": "Call Claude API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2340, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepared = $('Prepare AI Prompt').item.json;\nconst claudeResp = $input.first().json;\nlet analysisResult = null;\nlet success = false;\nlet errorMsg = '';\n\ntry {\n  if (claudeResp.error)\n    throw new Error('Anthropic error: ' + (claudeResp.error.message || JSON.stringify(claudeResp.error)));\n  const content = claudeResp.content;\n  if (!Array.isArray(content) || !content.length)\n    throw new Error('Empty Claude response');\n  const textBlock = content.find(c => c.type === 'text');\n  if (!textBlock) throw new Error('No text block in response');\n  let jsonStr = textBlock.text.trim();\n  jsonStr = jsonStr.replace(/^```(?:json)?\\s*/i, '').replace(/\\s*```$/i, '').trim();\n  analysisResult = JSON.parse(jsonStr);\n  analysisResult.repoId = analysisResult.repoId || prepared.jobId;\n  analysisResult.repoName = analysisResult.repoName || prepared.repoName;\n  analysisResult.owner = analysisResult.owner || prepared.owner;\n  analysisResult.language = analysisResult.language || prepared.language || 'Unknown';\n  analysisResult.filesCount = analysisResult.filesCount || prepared.filesCount || 0;\n  analysisResult.healthScore = Number(analysisResult.healthScore) || 0;\n  analysisResult.analyzedAt = analysisResult.analyzedAt || new Date().toISOString();\n  analysisResult.modules = Array.isArray(analysisResult.modules) ? analysisResult.modules : [];\n  analysisResult.insights = Array.isArray(analysisResult.insights) ? analysisResult.insights : [];\n  analysisResult.complexityByFile = Array.isArray(analysisResult.complexityByFile) ? analysisResult.complexityByFile : [];\n  analysisResult.circularDeps = Array.isArray(analysisResult.circularDeps) ? analysisResult.circularDeps : [];\n  analysisResult.deadCode = Array.isArray(analysisResult.deadCode) ? analysisResult.deadCode : [];\n  analysisResult.changelogs = Array.isArray(analysisResult.changelogs) ? analysisResult.changelogs : [];\n  if (!analysisResult.onboardingGuide)\n    analysisResult.onboardingGuide = { sections: [], generatedAt: new Date().toISOString() };\n  if (!analysisResult.healthReport)\n    analysisResult.healthReport = { overallScore: 70, maintainability: 70, testCoverage: 0, documentation: 50, issues: [] };\n  success = true;\n} catch(e) {\n  errorMsg = e.message;\n  analysisResult = {\n    repoId: prepared.jobId, repoName: prepared.repoName, owner: prepared.owner,\n    language: prepared.language || 'Unknown', filesCount: prepared.filesCount || 0,\n    healthScore: 0, analyzedAt: new Date().toISOString(),\n    modules: [], insights: [{ type: 'error', text: 'Analysis failed: ' + errorMsg }],\n    complexityByFile: [], circularDeps: [], deadCode: [], changelogs: [],\n    onboardingGuide: { sections: [], generatedAt: new Date().toISOString() },\n    healthReport: { overallScore: 0, maintainability: 0, testCoverage: 0, documentation: 0, issues: [] }\n  };\n}\n\nreturn [{ json: { jobId: prepared.jobId, analysisResult, success, errorMsg } }];"
+      },
+      "id": "f3a1b2c4-0012-4e5f-8a9b-aaaaaaaaaaaa",
+      "name": "Build AnalysisResult",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2560, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "check-success",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equal" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "f3a1b2c4-0013-4e5f-8a9b-aaaaaaaaaaaa",
+      "name": "Analysis Succeeded?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2780, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "Job",
+        "matchingColumns": ["id"],
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "id", "fieldValue": "={{ $json.jobId }}" },
+            { "fieldId": "status", "fieldValue": "COMPLETED" },
+            { "fieldId": "analysisResult", "fieldValue": "={{ $json.analysisResult }}" }
+          ]
+        }
+      },
+      "id": "f3a1b2c4-0014-4e5f-8a9b-aaaaaaaaaaaa",
+      "name": "Update Job [COMPLETED]",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [3000, 180],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-branchy-credential",
+          "name": "Supabase branchy.io"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "Job",
+        "matchingColumns": ["id"],
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "id", "fieldValue": "={{ $json.jobId }}" },
+            { "fieldId": "status", "fieldValue": "FAILED" },
+            { "fieldId": "analysisResult", "fieldValue": "={{ $json.analysisResult }}" }
+          ]
+        }
+      },
+      "id": "f3a1b2c4-0015-4e5f-8a9b-aaaaaaaaaaaa",
+      "name": "Update Job [FAILED]",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [3000, 420],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-branchy-credential",
+          "name": "Supabase branchy.io"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook - Start Analysis": {
+      "main": [[{ "node": "Extract Input", "type": "main", "index": 0 }]]
+    },
+    "Extract Input": {
+      "main": [[{ "node": "Create Job [PENDING]", "type": "main", "index": 0 }]]
+    },
+    "Create Job [PENDING]": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    },
+    "Respond to Webhook": {
+      "main": [[{ "node": "Update Job [RUNNING]", "type": "main", "index": 0 }]]
+    },
+    "Update Job [RUNNING]": {
+      "main": [[{ "node": "Get Repo Info", "type": "main", "index": 0 }]]
+    },
+    "Get Repo Info": {
+      "main": [[{ "node": "Get File Tree", "type": "main", "index": 0 }]]
+    },
+    "Get File Tree": {
+      "main": [[{ "node": "Get package.json", "type": "main", "index": 0 }]]
+    },
+    "Get package.json": {
+      "main": [[{ "node": "Get README.md", "type": "main", "index": 0 }]]
+    },
+    "Get README.md": {
+      "main": [[{ "node": "Prepare AI Prompt", "type": "main", "index": 0 }]]
+    },
+    "Prepare AI Prompt": {
+      "main": [[{ "node": "Call Claude API", "type": "main", "index": 0 }]]
+    },
+    "Call Claude API": {
+      "main": [[{ "node": "Build AnalysisResult", "type": "main", "index": 0 }]]
+    },
+    "Build AnalysisResult": {
+      "main": [[{ "node": "Analysis Succeeded?", "type": "main", "index": 0 }]]
+    },
+    "Analysis Succeeded?": {
+      "main": [
+        [{ "node": "Update Job [COMPLETED]", "type": "main", "index": 0 }],
+        [{ "node": "Update Job [FAILED]", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1", "saveManualExecutions": true },
+  "versionId": "branchy-analyze-v1",
+  "meta": { "templateCredsSetupCompleted": false },
+  "id": "branchy-analyze-pipeline-001",
+  "tags": []
+}

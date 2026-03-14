@@ -11,21 +11,34 @@ export default function DashboardPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
 
+  const counts = useMemo(() => {
+    const list = Object.values(repos);
+    return {
+      all: list.length,
+      issues: list.filter((r) => r.healthReport.issues.filter(i => !i.resolved).length > 0 || r.circularDeps.length > 0).length,
+      outdated: list.filter((r) => Date.now() - new Date(r.analyzedAt).getTime() > 7 * 86400000).length,
+    };
+  }, [repos]);
+
   const repoList = useMemo(() => {
     let list = Object.values(repos);
     if (search) {
       const q = search.toLowerCase();
       list = list.filter((r) => `${r.owner}/${r.repoName}`.toLowerCase().includes(q));
     }
-    if (filter === 'issues') list = list.filter((r) => r.healthReport.issues.filter(i => !i.resolved).length > 0);
-    if (filter === 'outdated') list = list.filter((r) => Date.now() - new Date(r.analyzedAt).getTime() > 7 * 86400000);
+    if (filter === 'issues') {
+      list = list.filter((r) => r.healthReport.issues.filter(i => !i.resolved).length > 0 || r.circularDeps.length > 0);
+    }
+    if (filter === 'outdated') {
+      list = list.filter((r) => Date.now() - new Date(r.analyzedAt).getTime() > 7 * 86400000);
+    }
     return list;
   }, [repos, search, filter]);
 
-  const filters: { label: string; value: Filter }[] = [
-    { label: 'Todos', value: 'all' },
-    { label: 'Com problemas', value: 'issues' },
-    { label: 'Desatualizados', value: 'outdated' },
+  const filters: { label: string; value: Filter; count: number }[] = [
+    { label: 'Todos', value: 'all', count: counts.all },
+    { label: 'Com problemas', value: 'issues', count: counts.issues },
+    { label: 'Desatualizados', value: 'outdated', count: counts.outdated },
   ];
 
   return (
@@ -55,13 +68,18 @@ export default function DashboardPage() {
             <button
               key={f.value}
               onClick={() => setFilter(f.value)}
-              className={`font-mono text-[11px] px-3 py-1.5 rounded-full border-[0.5px] transition-colors duration-150 ${
+              className={`font-mono text-[11px] px-3 py-1.5 rounded-full border-[0.5px] transition-colors duration-150 flex items-center gap-2 ${
                 filter === f.value
                   ? 'bg-b-blue-bg border-b-blue text-b-blue'
                   : 'border-b-border-subtle text-b-text-muted hover:text-b-text-secondary'
               }`}
             >
-              {f.label}
+              <span>{f.label}</span>
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${
+                filter === f.value ? 'bg-b-blue text-b-blue-bg' : 'bg-b-elevated text-b-text-ghost'
+              }`}>
+                {f.count}
+              </span>
             </button>
           ))}
         </div>

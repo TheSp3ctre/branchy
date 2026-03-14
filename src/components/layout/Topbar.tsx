@@ -93,13 +93,6 @@ export function Topbar({ owner, repoName }: TopbarProps) {
                 <Settings size={14} />
                 Configurações
               </button>
-              <button
-                onClick={() => { navigate('/app/settings/billing'); setDropdownOpen(false); }}
-                className="w-full flex items-center gap-2 px-4 py-2 font-mono text-[12px] text-b-text-secondary hover:bg-b-surface transition-colors duration-150"
-              >
-                <CreditCard size={14} />
-                Billing
-              </button>
               <div className="border-t-[0.5px] border-b-border my-1" />
               <button
                 onClick={() => { signOut(); setDropdownOpen(false); }}
