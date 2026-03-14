@@ -16,7 +16,7 @@ const Login = () => {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="max-w-[400px] w-full bg-surface border border-border-subtle rounded-lg p-8 text-center">
         <div className="mb-4 flex justify-center">
-          <img src="/LOG.PNG" alt="branchy" className="h-10 w-auto" />
+          <img src="https://i.imgur.com/d2964li.png" alt="branchy" className="h-10 w-auto" />
         </div>
         <p className="font-body text-[14px] text-muted-foreground mb-8">
           Entre com sua conta GitHub para continuar.

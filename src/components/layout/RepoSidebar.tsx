@@ -50,7 +50,7 @@ export function RepoSidebar() {
     <aside className="w-[220px] bg-b-surface border-r-[0.5px] border-b-border shrink-0 sticky top-[52px] h-[calc(100vh-52px)] flex flex-col overflow-y-auto">
       {/* Logo Area (Added) */}
       <div className="p-4 border-b-[0.5px] border-b-border flex items-center justify-center">
-        <img src="/LOG.PNG" alt="branchy" className="h-5 w-auto opacity-80" />
+        <img src="https://i.imgur.com/d2964li.png" alt="branchy" className="h-5 w-auto opacity-80" />
       </div>
 
       {/* Repo info */}

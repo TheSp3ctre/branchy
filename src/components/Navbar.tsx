@@ -9,7 +9,7 @@ const Navbar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border h-[52px] flex items-center px-6 md:px-12">
       <div className="flex items-center justify-between w-full">
         <Link to="/" className="flex items-center shrink-0">
-          <img src="/LOG.PNG" alt="branchy" className="h-6 w-auto" />
+          <img src="https://i.imgur.com/d2964li.png" alt="branchy" className="h-6 w-auto" />
         </Link>
         <div className="flex items-center gap-6">
           <div className="hidden md:flex items-center gap-5">
