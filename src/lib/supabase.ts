@@ -1,6 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://dwwgdkxswvpfipilemsc.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR3d2dka3hzd3ZwZmlwaWxlbXNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwOTk0NDIsImV4cCI6MjA4NjY3NTQ0Mn0.OJXiFdEGy9U9-hJfdtT0GY_9T3qoadrpdLoltUfRMUU';
+// Credentials from .env
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+if (!supabaseUrl || !supabaseAnonKey) {
+  // In development, this helps catch missing config
+  console.warn('Branchy: Supabase credentials not found in env.');
+}
+
+export const supabase = createClient(
+  supabaseUrl || '', 
+  supabaseAnonKey || ''
+);
