@@ -29,6 +29,8 @@ import IntegrationsPage from "@/pages/app/settings/IntegrationsPage";
 import ConnectPage from "@/pages/AppConnect";
 
 import NotFound from "./pages/NotFound.tsx";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const queryClient = new QueryClient();
 
@@ -36,6 +38,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Sonner />
+      <ToastContainer position="bottom-right" theme="dark" />
       <BrowserRouter>
         <AuthProvider>
           <Routes>
