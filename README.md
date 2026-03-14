@@ -135,15 +135,6 @@ cp .env.example .env
 npm run dev
 ```
 
-### Variáveis de ambiente necessárias
-
-```env
-VITE_SUPABASE_URL=
-VITE_SUPABASE_ANON_KEY=
-VITE_N8N_BASE_URL=
-```
-
----
 
 ## 📁 Estrutura do Projeto
 
@@ -160,7 +151,6 @@ src/
   ├── types/             # TypeScript types e interfaces
   └── config/            # Configurações (webhooks, constants)
 
-n8n-workflows/           # Workflows N8n (JSON exportáveis)
 prisma/                  # Schema do banco de dados
 ```
 
