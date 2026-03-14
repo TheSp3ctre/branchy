@@ -1,10 +1,10 @@
-import { Settings, CreditCard, Users } from 'lucide-react';
+import { Settings, CreditCard, Plug } from 'lucide-react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 
 const settingsNav = [
   { label: 'Geral', path: '/app/settings', icon: Settings },
+  { label: 'Integrações', path: '/app/settings/integrations', icon: Plug },
   { label: 'Billing', path: '/app/settings/billing', icon: CreditCard },
-  { label: 'Team', path: '/app/settings/team', icon: Users },
 ];
 
 export default function AccountSettingsPage() {
