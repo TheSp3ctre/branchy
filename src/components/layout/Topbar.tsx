@@ -30,10 +30,10 @@ export function Topbar({ owner, repoName }: TopbarProps) {
     : user?.email?.slice(0, 2).toUpperCase() ?? 'AC';
 
   return (
-    <header className="h-[140px] bg-b-base border-b-[0.5px] border-b-border sticky top-0 z-50 flex items-center px-6">
+    <header className="h-[52px] bg-b-base border-b-[0.5px] border-b-border sticky top-0 z-50 flex items-center px-6">
       {/* Left: Logo */}
       <Link to="/app/dashboard" className="flex items-center shrink-0">
-        <img src="https://i.imgur.com/d2964li.png" alt="branchy" className="h-32 w-auto" />
+        <img src="https://i.imgur.com/d2964li.png" alt="branchy" className="h-10 w-auto" />
       </Link>
 
       {/* Center: Breadcrumb */}

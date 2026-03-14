@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://i.imgur.com/d2964li.png" alt="branchy." width="1000" />
+<img src="https://i.imgur.com/d2964li.png" alt="branchy." width="220" />
 
 <br/>
 <br/>
