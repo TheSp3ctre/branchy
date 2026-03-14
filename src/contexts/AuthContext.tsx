@@ -33,11 +33,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       setLoading(false);
 
-      // After OAuth callback redirect to /app/connect
+      // After OAuth callback redirect to /app/dashboard
       if (event === 'SIGNED_IN' && session) {
-        // Only redirect if we're not already on the connect page
-        if (!window.location.pathname.startsWith('/app/connect')) {
-          window.location.href = '/app/connect';
+        // Only redirect if we're not already on the app pages
+        if (!window.location.pathname.startsWith('/app')) {
+          window.location.href = '/app/dashboard';
         }
       }
     });
@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: `${window.location.origin}/app/connect`,
+        redirectTo: `${window.location.origin}/app/dashboard`,
         scopes: 'repo read:user',
       },
     });
