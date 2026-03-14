@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBranchyStore } from '@/store/branchyStore';
 import { mockRepoTemplate } from '@/data/mockData';
+import { N8N_WEBHOOKS } from '@/config/webhooks';
+import { AnalysisResult } from '@/types';
 
 // ─────────────────────────────────────────────
 // Types
@@ -212,9 +214,11 @@ export default function ConnectModal({ onDismiss }: ConnectModalProps) {
   const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
   const [stepTransitionKey, setStepTransitionKey] = useState(0);
   const runningRef = useRef(false);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [realResult, setRealResult] = useState<AnalysisResult | null>(null);
 
   // Step 3 state
-  const [analysisStats] = useState({ files: 247, healthScore: 72, issues: 14 });
+  const [analysisStats, setAnalysisStats] = useState({ files: 0, healthScore: 0, issues: 0 });
 
   // Overlay closing animation
   const [fading, setFading] = useState(false);
@@ -236,70 +240,94 @@ export default function ConnectModal({ onDismiss }: ConnectModalProps) {
       .catch(() => setReposLoading(false));
   }, [session]);
 
-  // ── Task runner ──────────────────────────────
-  const runTasks = useCallback(async () => {
+  // ── Task runner (n8n Polling) ────────────────
+  const runTasks = useCallback(async (jobIdVal: string) => {
     if (runningRef.current) return;
     runningRef.current = true;
 
     let taskList = INITIAL_TASKS.map((t) => ({ ...t }));
+    let completedInUI = 0;
 
-    for (let i = 0; i < taskList.length; i++) {
-      const taskId = taskList[i].id;
-      // Set running
-      taskList = taskList.map((t) => t.id === taskId ? { ...t, status: 'running' as TaskStatus } : t);
-      setTasks([...taskList]);
+    // We animate the UI tasks while polling in the background
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`${N8N_WEBHOOKS.GET_STATUS}?jobId=${jobIdVal}`);
+        const data = await res.json();
 
-      await new Promise((r) => setTimeout(r, TASK_DELAYS[taskId] ?? 1500));
+        if (data.status === 'COMPLETED' || data.status === 'FAILED') {
+          clearInterval(interval);
+          
+          // Complete remaining UI tasks quickly
+          for (let i = completedInUI; i < taskList.length; i++) {
+            taskList[i].status = data.status === 'COMPLETED' ? 'complete' : 'error';
+            setTasks([...taskList]);
+            await new Promise(r => setTimeout(r, 100));
+          }
 
-      // Set complete
-      taskList = taskList.map((t) =>
-        t.id === taskId ? { ...t, status: 'complete' as TaskStatus, duration: TASK_DELAYS[taskId] / 1000 } : t
-      );
-      setTasks([...taskList]);
-    }
-
-    // All done → wait 600ms then step 3
-    await new Promise((r) => setTimeout(r, 600));
-    setStepTransitionKey((k) => k + 1);
-    setStep('complete');
-    runningRef.current = false;
+          if (data.status === 'COMPLETED' && data.analysisResult) {
+            const result = data.analysisResult as AnalysisResult;
+            setRealResult(result);
+            setAnalysisStats({
+              files: result.filesCount,
+              healthScore: result.healthScore,
+              issues: result.healthReport.issues.length,
+            });
+            
+            await new Promise((r) => setTimeout(r, 600));
+            setStepTransitionKey((k) => k + 1);
+            setStep('complete');
+          } else {
+            // Handle error state in UI if needed
+          }
+          runningRef.current = false;
+        } else {
+          // Progress simulation
+          if (completedInUI < taskList.length - 1) {
+             taskList[completedInUI].status = 'complete';
+             completedInUI++;
+             taskList[completedInUI].status = 'running';
+             setTasks([...taskList]);
+          }
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
+      }
+    }, 2000);
   }, []);
 
   // ── Transition to step 2 ─────────────────────
-  const handleAnalyze = () => {
-    if (!selectedRepo) return;
+  const handleAnalyze = async () => {
+    if (!selectedRepo || !session?.provider_token) return;
     setStepTransitionKey((k) => k + 1);
     setStep('analyzing');
 
-    // Fire webhook (best-effort, we don't block on it)
-    fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ repo: selectedRepo.full_name }),
-    }).catch(() => {});
-
-    runTasks();
+    try {
+      const res = await fetch(N8N_WEBHOOKS.ANALYZE_REPO, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          repoUrl: selectedRepo.full_name,
+          repoName: selectedRepo.name,
+          owner: selectedRepo.owner.login,
+          token: session.provider_token,
+        }),
+      });
+      const data = await res.json();
+      if (data.jobId) {
+        setJobId(data.jobId);
+        runTasks(data.jobId);
+      }
+    } catch (err) {
+      console.error('Failed to start analysis:', err);
+    }
   };
 
   // ── Step 3 → navigate ────────────────────────
   const handleViewResults = () => {
-    if (selectedRepo) {
+    if (selectedRepo && realResult) {
       const repoId = selectedRepo.name;
-      // Persist to Zustand store with mock data (real webhook data would fill this)
-      addRepo({
-        ...mockRepoTemplate,
-        repoId,
-        repoName: selectedRepo.name,
-        owner: selectedRepo.owner.login,
-        language: selectedRepo.language || 'TypeScript',
-        filesCount: analysisStats.files,
-        healthScore: analysisStats.healthScore,
-        healthReport: {
-          ...mockRepoTemplate.healthReport,
-          overallScore: analysisStats.healthScore,
-        },
-        analyzedAt: new Date().toISOString(),
-      });
+      // Persist the real result from n8n
+      addRepo(realResult);
       addRecentRepo({
         repoId,
         repoUrl: selectedRepo.full_name,
@@ -314,12 +342,29 @@ export default function ConnectModal({ onDismiss }: ConnectModalProps) {
         onDismiss?.();
         navigate(`/app/repo/${repoId}`);
       }, 200);
-    } else {
+    } else if (selectedRepo) {
+      // Fallback to mock if real result missing (should not happen in success flow)
+      const repoId = selectedRepo.name;
+      addRepo({
+        ...mockRepoTemplate,
+        repoId,
+        repoName: selectedRepo.name,
+        owner: selectedRepo.owner.login,
+        language: selectedRepo.language || 'TypeScript',
+        filesCount: analysisStats.files,
+        healthScore: analysisStats.healthScore,
+        healthReport: {
+          ...mockRepoTemplate.healthReport,
+          overallScore: analysisStats.healthScore,
+        },
+        analyzedAt: new Date().toISOString(),
+      });
+      // ... same as before
       setFading(true);
       setTimeout(() => {
         setVisible(false);
         onDismiss?.();
-        navigate('/app/dashboard');
+        navigate(`/app/repo/${repoId}`);
       }, 200);
     }
   };

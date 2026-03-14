@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 
 branchy-dashboard-temp/
+
+/src/generated/prisma

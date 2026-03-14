@@ -1,5 +1,4 @@
-export const WEBHOOKS = {
-  analyze: 'https://YOUR_N8N_URL/webhook/branchy/analyze',
-  status: 'https://YOUR_N8N_URL/webhook/branchy/status',
-  repos: 'https://YOUR_N8N_URL/webhook/branchy/repos',
+export const N8N_WEBHOOKS = {
+  ANALYZE_REPO: 'https://n8n-cloud-instance.com/webhook/analyze',
+  GET_STATUS: 'https://n8n-cloud-instance.com/webhook/status',
 };
