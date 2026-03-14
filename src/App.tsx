@@ -24,8 +24,6 @@ import RepoSettingsPage from "@/pages/app/repo/Settings";
 import AccountSettingsPage from "@/pages/app/settings/AccountSettings";
 import AccountGeneralPage from "@/pages/app/settings/AccountGeneral";
 import IntegrationsPage from "@/pages/app/settings/IntegrationsPage";
-import BillingPage from "@/pages/app/settings/BillingPage";
-import TeamPage from "@/pages/app/settings/TeamPage";
 
 // ConnectModal page
 import ConnectPage from "@/pages/AppConnect";
@@ -53,7 +51,6 @@ const App = () => (
               <Route path="settings" element={<AccountSettingsPage />}>
                 <Route index element={<AccountGeneralPage />} />
                 <Route path="integrations" element={<IntegrationsPage />} />
-                <Route path="billing" element={<BillingPage />} />
               </Route>
             </Route>
 
