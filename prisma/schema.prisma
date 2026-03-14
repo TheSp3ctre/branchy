@@ -224,3 +224,12 @@ model IntegrationEvent {
   createdAt   DateTime @default(now())
 }
 
+model ExportHistory {
+  id         String   @id @default(uuid())
+  repoId     String
+  userId     String
+  exportType String   // architecture_png | dependency_png | onboarding_md | full_report_pdf
+  fileSizeKb Int?
+  createdAt  DateTime @default(now())
+}
+
