@@ -33,9 +33,7 @@ export function Topbar({ owner, repoName }: TopbarProps) {
     <header className="h-[52px] bg-b-base border-b-[0.5px] border-b-border sticky top-0 z-50 flex items-center px-6">
       {/* Left: Logo */}
       <Link to="/app/dashboard" className="flex items-center shrink-0">
-        <span className="font-mono text-[16px] font-semibold text-white">
-          branchy<span className="text-b-green">.</span>
-        </span>
+        <img src="/log.png" alt="branchy" className="h-6 w-auto" />
       </Link>
 
       {/* Center: Breadcrumb */}

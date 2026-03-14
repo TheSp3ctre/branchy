@@ -15,9 +15,9 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="max-w-[400px] w-full bg-surface border border-border-subtle rounded-lg p-8 text-center">
-        <h1 className="font-mono text-[24px] font-semibold text-foreground mb-2">
-          branchy<span className="text-primary">.</span>
-        </h1>
+        <div className="mb-4 flex justify-center">
+          <img src="/log.png" alt="branchy" className="h-10 w-auto" />
+        </div>
         <p className="font-body text-[14px] text-muted-foreground mb-8">
           Entre com sua conta GitHub para continuar.
         </p>
