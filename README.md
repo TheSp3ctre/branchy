@@ -107,12 +107,7 @@ Do código fonte ao score de saúde — cada insight tem uma fonte verificável.
 ### Backend & Infraestrutura
 - **Supabase** — banco de dados PostgreSQL, autenticação e Realtime
 - **Supabase Edge Functions** (Deno) — lógica serverless
-- **N8n** — orquestração de workflows e automações
 - **Prisma ORM** — modelagem do banco de dados
-
-### IA
-- **Claude (Anthropic)** — análise de código e geração de documentação
-- **Gemini (Google)** — categorização, enriquecimento e análise de issues
 
 ### Integrações
 - **GitHub API** — commits, repositórios, webhooks
@@ -140,15 +135,6 @@ cp .env.example .env
 npm run dev
 ```
 
-### Variáveis de ambiente necessárias
-
-```env
-VITE_SUPABASE_URL=
-VITE_SUPABASE_ANON_KEY=
-VITE_N8N_BASE_URL=
-```
-
----
 
 ## 📁 Estrutura do Projeto
 
@@ -165,7 +151,6 @@ src/
   ├── types/             # TypeScript types e interfaces
   └── config/            # Configurações (webhooks, constants)
 
-n8n-workflows/           # Workflows N8n (JSON exportáveis)
 prisma/                  # Schema do banco de dados
 ```
 
