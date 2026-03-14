@@ -1,73 +1,185 @@
-# Welcome to your Lovable project
+<div align="center">
 
-## Project info
+<img src="public/LOG.PNG" alt="branchy." width="220" />
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+<br/>
+<br/>
 
-## How can I edit this code?
+**Transforme repositórios GitHub em mapas de arquitetura, grafos de dependências e guias de onboarding — em menos de 60 segundos.**
 
-There are several ways of editing your application.
+<br/>
 
-**Use Lovable**
+[![Deploy](https://img.shields.io/badge/deploy-vercel-black?style=flat-square&logo=vercel)](https://branchy.io)
+[![Stack](https://img.shields.io/badge/stack-react%20%2B%20typescript-blue?style=flat-square&logo=react)](/)
+[![AI](https://img.shields.io/badge/AI-claude%20%2B%20gemini-orange?style=flat-square)](/)
+[![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](/)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+</div>
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## O que é o Branchy?
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+**Branchy** é uma plataforma de inteligência de repositórios que une IA, análise estática de código e visualização interativa para dar às equipes de desenvolvimento uma visão completa e em tempo real de seus projetos no GitHub.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Do código ao insight — sem fricção.
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## 🎯 O Problema
 
-# Step 3: Install the necessary dependencies.
-npm i
+Repositórios crescem. A clareza não — na mesma velocidade.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+Desenvolvedores perdem horas entendendo código legado. Times novos ficam semanas sem saber onde mexer. Dependências críticas ficam invisíveis até quebrarem em produção. Documentação desatualiza sozinha.
+
+**O Branchy resolve isso.**
+
+---
+
+## ✨ O que o Branchy faz
+
+| Feature | Descrição |
+|---|---|
+| 🗺️ **Architecture Map** | Mapa visual da arquitetura gerado por IA com Claude, baseado na estrutura real do código |
+| 📦 **Dependency Graph** | Grafo interativo de dependências com alertas de vulnerabilidades (CVE) e pacotes desatualizados |
+| 📋 **Onboarding Guide** | README avançado gerado por IA — adaptável por persona (Dev, Stakeholder, Auditor) — exportável em PDF |
+| 💚 **Code Health** | Score de saúde do código (0–100) com 5 dimensões: segurança, arquitetura, manutenibilidade, testes e documentação |
+| 🪲 **Dead Code** | Detecção automática de código morto, exports não usados, dependências circulares e complexidade excessiva |
+| 📜 **Changelog** | Feed de commits do GitHub com análise de tipo (feat/fix/refactor) e resumo por IA |
+| 📤 **Export** | Exportação de todos os artefatos em PNG, SVG, PDF e Markdown |
+| 🔌 **Integrações** | Conecte Slack, Jira e Notion para receber alertas e criar tickets automaticamente |
+
+---
+
+## 🧠 Valores do Produto
+
+**Clareza antes da complexidade**
+Código complexo precisa de clareza. O Branchy torna visível o que estava fragmentado ou implícito.
+
+**IA como ferramenta, não como mágica**
+A IA do Branchy gera contexto útil e acionável — não apenas texto genérico.
+
+**Tempo do desenvolvedor é sagrado**
+Cada feature foi desenhada para reduzir o tempo gasto em descoberta e aumentar o tempo em entrega.
+
+**Rastreabilidade e transparência**
+Do código fonte ao score de saúde — cada insight tem uma fonte verificável.
+
+---
+
+## 🔄 Como o Branchy funciona
+
+```
+1. Conecte seu repositório GitHub
+         │
+         ▼
+2. O Branchy analisa toda a estrutura via IA (Claude + Gemini)
+         │
+         ├──► Gera Architecture Map (Mermaid)
+         ├──► Detecta dependências e vulnerabilidades
+         ├──► Calcula Code Health Score
+         ├──► Identifica Dead Code
+         └──► Gera Onboarding Guide personalizado
+         │
+         ▼
+3. Visualize tudo em uma interface unificada
+         │
+         ▼
+4. Mantenha-se atualizado automaticamente
+   (a cada commit, o pipeline roda de novo)
+```
+
+---
+
+## 🛠️ Tecnologias
+
+### Frontend
+- **React 18** com **Vite** e **TypeScript**
+- **Tailwind CSS** + **shadcn/ui** para interface
+- **React Router v6** para navegação
+- **Zustand** para gerenciamento de estado
+- **React Flow** para grafos interativos
+- **Recharts** para visualizações de dados
+- **Mermaid.js** para diagramas de arquitetura
+
+### Backend & Infraestrutura
+- **Supabase** — banco de dados PostgreSQL, autenticação e Realtime
+- **Supabase Edge Functions** (Deno) — lógica serverless
+- **N8n** — orquestração de workflows e automações
+- **Prisma ORM** — modelagem do banco de dados
+
+### IA
+- **Claude (Anthropic)** — análise de código e geração de documentação
+- **Gemini (Google)** — categorização, enriquecimento e análise de issues
+
+### Integrações
+- **GitHub API** — commits, repositórios, webhooks
+- **Slack API** — notificações de alertas
+- **Jira API** — criação automática de issues
+- **Notion API** — publicação de documentação
+
+---
+
+## 🚀 Como rodar localmente
+
+```bash
+# 1. Clone o repositório
+git clone https://github.com/TheSp3ctre/branchyio-main
+cd branchyio-main
+
+# 2. Instale as dependências
+npm install
+
+# 3. Configure as variáveis de ambiente
+cp .env.example .env
+# Edite o .env com suas credenciais (Supabase, GitHub, Claude API, N8n)
+
+# 4. Inicie o servidor de desenvolvimento
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Variáveis de ambiente necessárias
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```env
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+VITE_N8N_BASE_URL=
+```
 
-**Use GitHub Codespaces**
+---
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 📁 Estrutura do Projeto
 
-## What technologies are used for this project?
+```
+src/
+  ├── components/        # Componentes React reutilizáveis
+  │   └── layout/        # Topbar, Sidebar, AppLayout, RepoLayout
+  ├── pages/             # Páginas da aplicação
+  │   ├── app/           # Dashboard, repo views, settings
+  │   └── Login.tsx      # Autenticação GitHub OAuth
+  ├── services/          # Camada de serviços (Supabase, N8n)
+  ├── store/             # Estado global (Zustand)
+  ├── hooks/             # Custom hooks React
+  ├── types/             # TypeScript types e interfaces
+  └── config/            # Configurações (webhooks, constants)
 
-This project is built with:
+n8n-workflows/           # Workflows N8n (JSON exportáveis)
+prisma/                  # Schema do banco de dados
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## 📄 Licença
 
-## Can I connect a custom domain to my Lovable project?
+MIT © Branchy.io
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+<div align="center">
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+**branchy<span>.</span>** — *Do código ao insight, sem fricção.*
+
+</div>
