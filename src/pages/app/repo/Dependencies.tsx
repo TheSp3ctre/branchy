@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useBranchyStore } from '@/store/branchyStore';
 import { ModuleDrawer } from '@/components/ModuleDrawer';
@@ -12,13 +12,22 @@ export default function DependenciesPage() {
   const [showOnlyCircular, setShowOnlyCircular] = useState(false);
   const [zoom, setZoom] = useState(1);
 
+  const { circularModuleNames, moduleMap, circularCount, modules } = useMemo(() => {
+    if (!repo) return { circularModuleNames: new Set<string>(), moduleMap: new Map<string, Module>(), circularCount: 0, modules: [] };
+    
+    const circularNames = new Set(repo.circularDeps.flatMap((cd) => cd.chain));
+    const map = new Map<string, Module>();
+    repo.modules.forEach(m => map.set(m.id, m));
+    
+    return { 
+      circularModuleNames: circularNames, 
+      moduleMap: map,
+      circularCount: repo.circularDeps.length,
+      modules: repo.modules
+    };
+  }, [repo]);
+
   if (!repo) return <div className="p-6 font-mono text-b-text-ghost">// repositório não encontrado</div>;
-
-  const circularCount = repo.circularDeps.length;
-  const modules = repo.modules;
-
-  // Build dep tree nodes
-  const circularModuleNames = new Set(repo.circularDeps.flatMap((cd) => cd.chain));
 
   return (
     <div className="flex flex-col h-[calc(100vh-52px)]">
@@ -63,7 +72,6 @@ export default function DependenciesPage() {
 
       {/* Graph area */}
       <div className="flex-1 bg-b-base overflow-auto p-6">
-        {/* Circular dep chains */}
         {showOnlyCircular ? (
           <div className="space-y-3 max-w-[600px] mx-auto">
             {repo.circularDeps.map((cd) => (
@@ -90,7 +98,7 @@ export default function DependenciesPage() {
             {modules.map((mod) => {
               const isCircular = circularModuleNames.has(mod.name);
               const deps = mod.dependsOn
-                .map((id) => modules.find((m) => m.id === id))
+                .map((id) => moduleMap.get(id))
                 .filter(Boolean);
               return (
                 <div

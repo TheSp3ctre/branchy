@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import './ConnectModal.css';
+
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBranchyStore } from '@/store/branchyStore';
@@ -241,6 +243,14 @@ export default function ConnectModal({ onDismiss }: ConnectModalProps) {
   }, [session]);
 
   // ── Task runner (n8n Polling) ────────────────
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
   const runTasks = useCallback(async (jobIdVal: string) => {
     if (runningRef.current) return;
     runningRef.current = true;
@@ -249,13 +259,14 @@ export default function ConnectModal({ onDismiss }: ConnectModalProps) {
     let completedInUI = 0;
 
     // We animate the UI tasks while polling in the background
-    const interval = setInterval(async () => {
+    intervalRef.current = setInterval(async () => {
       try {
         const res = await fetch(`${N8N_WEBHOOKS.GET_STATUS}?jobId=${jobIdVal}`);
         const data = await res.json();
 
         if (data.status === 'COMPLETED' || data.status === 'FAILED') {
-          clearInterval(interval);
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          intervalRef.current = null;
           
           // Complete remaining UI tasks quickly
           for (let i = completedInUI; i < taskList.length; i++) {
@@ -380,60 +391,7 @@ export default function ConnectModal({ onDismiss }: ConnectModalProps) {
 
   return (
     <>
-      {/* Global styles (injected once) */}
-      <style>{`
-        @keyframes branchyPulse {
-          0%, 100% { opacity: 0.4; }
-          50% { opacity: 0.8; }
-        }
-        @keyframes branchySpin {
-          to { transform: rotate(360deg); }
-        }
-        @keyframes branchyFadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes branchySlideUp {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes branchyScaleIn {
-          from { opacity: 0; transform: scale(0.97); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes branchyCheckPop {
-          0% { transform: scale(0.5); opacity: 0; }
-          60% { transform: scale(1.15); }
-          100% { transform: scale(1); opacity: 1; }
-        }
-        @keyframes branchyTaskIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        .branchy-spinner {
-          width: 18px;
-          height: 18px;
-          border: 1.5px solid #1A4228;
-          border-top-color: #3FB950;
-          border-radius: 50%;
-          animation: branchySpin 700ms linear infinite;
-        }
-        .branchy-check {
-          animation: branchyCheckPop 200ms ease forwards;
-        }
-        .branchy-overlay {
-          animation: branchyFadeIn 150ms ease forwards;
-        }
-        .branchy-step-enter {
-          animation: branchySlideUp 200ms ease forwards;
-        }
-        .branchy-step-scale {
-          animation: branchyScaleIn 250ms ease forwards;
-        }
-        .branchy-task-item {
-          animation: branchyTaskIn 150ms ease forwards;
-        }
-      `}</style>
+      {/* Modal Content */}
 
       {/* Overlay */}
       <div

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useBranchyStore } from '@/store/branchyStore';
 import { ModuleDrawer } from '@/components/ModuleDrawer';
@@ -16,16 +16,31 @@ export default function ArchitecturePage() {
   if (!repo) return <div className="p-6 font-mono text-b-text-ghost">// repositório não encontrado</div>;
 
   const modules = repo.modules;
-  const cols = Math.min(4, modules.length);
-  const nodeWidth = 160;
-  const nodeHeight = 40;
-  const gapX = 60;
-  const gapY = 80;
+  const { cols, nodeWidth, nodeHeight, gapX, gapY, getNodePos, edges, svgHeight, svgWidth } = useMemo(() => {
+    const cols = Math.min(4, modules.length);
+    const nodeWidth = 160;
+    const nodeHeight = 40;
+    const gapX = 60;
+    const gapY = 80;
 
-  const getNodePos = (index: number) => ({
-    x: 80 + (index % cols) * (nodeWidth + gapX),
-    y: 60 + Math.floor(index / cols) * (nodeHeight + gapY),
-  });
+    const getNodePos = (index: number) => ({
+      x: 80 + (index % cols) * (nodeWidth + gapX),
+      y: 60 + Math.floor(index / cols) * (nodeHeight + gapY),
+    });
+
+    const edges: { from: number; to: number }[] = [];
+    modules.forEach((mod, i) => {
+      mod.dependsOn.forEach((depId) => {
+        const j = modules.findIndex((m) => m.id === depId);
+        if (j >= 0) edges.push({ from: i, to: j });
+      });
+    });
+
+    const svgHeight = Math.ceil(modules.length / cols) * (nodeHeight + gapY) + 80;
+    const svgWidth = cols * (nodeWidth + gapX) + 80;
+
+    return { cols, nodeWidth, nodeHeight, gapX, gapY, getNodePos, edges, svgHeight, svgWidth };
+  }, [modules]);
 
   const legendItems = [
     { label: 'Core', type: 'core' },
@@ -34,18 +49,6 @@ export default function ArchitecturePage() {
     { label: 'Flagged', type: 'flagged' },
     { label: 'Component', type: 'component' },
   ];
-
-  // Build edges
-  const edges: { from: number; to: number }[] = [];
-  modules.forEach((mod, i) => {
-    mod.dependsOn.forEach((depId) => {
-      const j = modules.findIndex((m) => m.id === depId);
-      if (j >= 0) edges.push({ from: i, to: j });
-    });
-  });
-
-  const svgHeight = Math.ceil(modules.length / cols) * (nodeHeight + gapY) + 80;
-  const svgWidth = cols * (nodeWidth + gapX) + 80;
 
   return (
     <div className="flex flex-col h-[calc(100vh-52px)]">

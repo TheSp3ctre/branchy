@@ -7,7 +7,7 @@ type Filter = 'all' | 'issues' | 'outdated';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { repos } = useBranchyStore();
+  const repos = useBranchyStore((s) => s.repos);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
 
