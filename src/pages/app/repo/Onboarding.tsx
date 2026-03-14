@@ -1,141 +1,213 @@
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useBranchyStore } from '@/store/branchyStore';
-import { timeAgo, getModuleColor } from '@/lib/branchy-utils';
-import { Download } from 'lucide-react';
+import { Download, Sparkles, User, Shield, Briefcase, RefreshCw, Loader2, FileText, ChevronRight } from 'lucide-react';
+import { onboardingService, OnboardingGuide } from '@/services/onboarding';
+import ReactMarkdown from 'react-markdown';
+import mermaid from 'mermaid';
+import { motion, AnimatePresence } from 'framer-motion';
+
+type Persona = 'developer' | 'stakeholder' | 'auditor';
 
 export default function OnboardingPage() {
-  const { repoId } = useParams();
+  const { repoId } = useParams<{ repoId: string }>();
   const repo = useBranchyStore((s) => (repoId ? s.repos[repoId] : null));
+  
+  const [guide, setGuide] = useState<OnboardingGuide | null>(null);
+  const [persona, setPersona] = useState<Persona>('developer');
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+
+  const fetchGuide = async () => {
+    if (!repoId) return;
+    try {
+      setLoading(true);
+      const data = await onboardingService.getLatest(repoId, persona);
+      setGuide(data);
+    } catch (err) {
+      console.error('Failed to fetch onboarding guide:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGuide();
+  }, [repoId, persona]);
+
+  useEffect(() => {
+    if (guide?.contentMd) {
+      mermaid.initialize({ 
+        startOnLoad: false, 
+        theme: 'dark',
+        themeVariables: { 
+          primaryColor: '#10B981',
+          primaryTextColor: '#fff',
+          lineColor: '#334155'
+        } 
+      });
+      mermaid.run({ querySelector: '.mermaid' });
+    }
+  }, [guide]);
+
+  const handleGenerate = async () => {
+    if (!repoId) return;
+    try {
+      setGenerating(true);
+      await onboardingService.generate(repoId, persona);
+      await fetchGuide();
+    } catch (err) {
+      console.error('Generation failed:', err);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleDownloadMd = () => {
+    if (!guide) return;
+    const blob = new Blob([guide.contentMd], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `onboarding-${repo?.repoName}-${persona}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (!repo) return <div className="p-6 font-mono text-b-text-ghost">// repositório não encontrado</div>;
 
-  const guide = repo.onboardingGuide;
-
-  const techCategoryColors: Record<string, string> = {
-    language: 'bg-b-blue-bg border-b-blue-border text-b-blue',
-    runtime: 'bg-b-green-bg border-b-green-border text-b-green',
-    framework: 'bg-b-purple-bg border-b-purple-border text-b-purple',
-    database: 'bg-b-yellow-bg border-b-yellow-border text-b-yellow',
-    service: 'bg-b-blue-bg border-b-blue-border text-b-blue',
-    testing: 'bg-b-green-bg border-b-green-border text-b-green',
-    infra: 'bg-b-card border-b-border-subtle text-b-text-secondary',
-    build: 'bg-b-card border-b-border-subtle text-b-text-secondary',
-    styling: 'bg-b-purple-bg border-b-purple-border text-b-purple',
-    data: 'bg-b-blue-bg border-b-blue-border text-b-blue',
-  };
+  const personas = [
+    { id: 'developer', label: 'Developer', icon: User, desc: 'Foco técnico e arquitetura' },
+    { id: 'stakeholder', label: 'Stakeholder', icon: Briefcase, desc: 'Visão de negócio e impacto' },
+    { id: 'auditor', label: 'Auditor', icon: Shield, desc: 'Segurança e conformidade' },
+  ];
 
   return (
-    <div className="max-w-[720px] mx-auto py-8 px-6">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-8">
+    <div className="flex bg-b-background min-h-screen">
+      {/* Persona Sidebar */}
+      <div className="w-[280px] border-r border-b-border p-6 flex flex-col gap-6">
         <div>
-          <h1 className="font-mono text-[20px] text-white">Onboarding guide</h1>
-          <p className="font-body text-[13px] text-b-text-muted mt-1">
-            Gerado pelo Branchy AI · atualizado {timeAgo(guide.generatedAt)}
-          </p>
+          <h3 className="font-mono text-[10px] text-b-text-ghost uppercase tracking-widest mb-4">Selecione a Persona</h3>
+          <div className="space-y-2">
+            {personas.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => setPersona(p.id as Persona)}
+                className={`w-full text-left p-3 rounded-card border transition-all ${
+                  persona === p.id 
+                    ? 'bg-b-card border-b-blue text-white' 
+                    : 'border-transparent text-b-text-ghost hover:bg-b-surface'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <p.icon size={14} className={persona === p.id ? 'text-b-blue' : ''} />
+                  <span className="font-mono text-[13px] font-bold">{p.label}</span>
+                </div>
+                <p className="font-body text-[11px] opacity-60 leading-tight">{p.desc}</p>
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button className="flex items-center gap-1.5 font-mono text-[12px] text-b-text-secondary border-[0.5px] border-b-border-subtle rounded-btn px-3 py-1.5 hover:bg-b-card transition-colors duration-150">
-            <Download size={13} /> Exportar PDF
+
+        <div className="mt-auto pt-6 border-t border-b-border">
+          <button 
+            onClick={handleGenerate}
+            disabled={generating}
+            className="w-full flex items-center justify-center gap-2 bg-b-blue text-white font-mono text-[12px] py-3 rounded-btn hover:brightness-110 transition-all disabled:opacity-50"
+          >
+            {generating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+            {generating ? 'Gerando...' : 'Regerar com IA'}
           </button>
         </div>
       </div>
 
-      {/* Sections */}
-      <div className="space-y-8">
-        {guide.sections.map((section, i) => (
-          <div key={i}>
-            <h2 className="font-mono text-[14px] text-b-green uppercase tracking-[0.08em] mb-3 pb-2 border-b-[0.5px] border-b-border">
-              {section.title}
-            </h2>
-
-            {section.type === 'overview' && (
-              <p className="font-body text-[15px] font-light text-b-text-secondary leading-[1.8]">{section.content}</p>
-            )}
-
-            {section.type === 'techStack' && (
-              <div className="flex flex-wrap gap-2">
-                {section.content.map((tech: any) => (
-                  <span key={tech.name} className={`font-mono text-[12px] px-2.5 py-1 rounded-sm border-[0.5px] ${techCategoryColors[tech.category] || techCategoryColors.infra}`}>
-                    {tech.name}
-                  </span>
-                ))}
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-[800px] mx-auto py-12 px-8">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-12 border-b border-b-border pb-8">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-b-blue-bg text-b-blue text-[10px] font-mono px-2 py-0.5 rounded-sm uppercase">AI Generated</span>
+                <span className="text-b-text-ghost font-mono text-[10px] uppercase">{guide?.modelUsed || 'Claude 3.5 Sonnet'}</span>
               </div>
-            )}
-
-            {section.type === 'structure' && (
-              <div className="space-y-1">
-                {section.content.map((item: any) => (
-                  <div key={item.name}>
-                    <div className="flex items-center gap-2 py-1.5">
-                      <span className="font-mono text-[12px] text-b-text">{item.children ? '▸' : '·'} {item.name}</span>
-                      <span className="font-body text-[12px] text-b-text-muted">{item.description}</span>
-                    </div>
-                    {item.children?.map((child: any) => (
-                      <div key={child.name} className="flex items-center gap-2 py-1 pl-6">
-                        <span className="font-mono text-[12px] text-b-text-secondary">· {child.name}</span>
-                        <span className="font-body text-[12px] text-b-text-muted">{child.description}</span>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {section.type === 'modules' && (
-              <div className="grid grid-cols-2 gap-3">
-                {section.content.map((mod: any) => (
-                  <div key={mod.name} className="bg-b-card border-[0.5px] border-b-border rounded-card p-4">
-                    <div className="font-mono text-[13px] text-white">{mod.name}</div>
-                    <div className="font-mono text-[11px] text-b-text-ghost mt-0.5">{mod.path}</div>
-                    <p className="font-body text-[12px] text-b-text-secondary mt-2">{mod.description}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {section.type === 'gettingStarted' && (
-              <div className="space-y-3">
-                {section.content.map((item: any, j: number) => (
-                  <div key={j} className="flex items-start gap-3">
-                    <span className="font-mono text-[14px] text-b-green font-semibold">{j + 1}</span>
-                    <div>
-                      <span className="font-mono text-[12px] text-b-text">{item.file}</span>
-                      <p className="font-body text-[12px] text-b-text-muted mt-0.5">{item.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {section.type === 'patterns' && (
-              <div className="space-y-3">
-                {section.content.map((item: any) => (
-                  <div key={item.pattern} className="bg-b-surface border-l-2 border-b-green px-4 py-3.5">
-                    <div className="font-mono text-[12px] text-b-text mb-2">{item.pattern}</div>
-                    <pre className="font-mono text-[12px] text-b-text whitespace-pre-wrap">{item.code}</pre>
-                    <p className="font-body text-[12px] text-b-text-muted mt-2">{item.description}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {section.type === 'runLocally' && (
-              <div className="space-y-3">
-                {section.content.map((step: any) => (
-                  <div key={step.step} className="flex items-start gap-3">
-                    <span className="font-mono text-[14px] text-b-green font-semibold w-5">{step.step}</span>
-                    <div className="flex-1">
-                      <div className="font-mono text-[12px] text-b-text mb-1">{step.label}</div>
-                      <div className="bg-b-surface border-l-2 border-b-green px-3 py-2 font-mono text-[12px] text-b-text">{step.command}</div>
-                      <p className="font-body text-[12px] text-b-text-muted mt-1">{step.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <h1 className="font-mono text-[28px] text-white font-bold leading-tight">
+                {guide?.title || `Guia de Onboarding — ${repo.repoName}`}
+              </h1>
+              {guide && (
+                <p className="font-body text-[13px] text-b-text-ghost mt-2">
+                  Gerado em {new Date(guide.createdAt).toLocaleDateString()} · {guide.wordCount} palavras
+                </p>
+              )}
+            </div>
+            
+            {guide && (
+              <button 
+                onClick={handleDownloadMd}
+                className="flex items-center gap-2 font-mono text-[12px] text-b-text-ghost border border-b-border px-4 py-2 rounded-btn hover:text-white hover:border-b-text-ghost transition-all"
+              >
+                <FileText size={14} /> Download .md
+              </button>
             )}
           </div>
-        ))}
+
+          {/* Content Loading / Empty State */}
+          {loading ? (
+            <div className="space-y-6">
+              <div className="h-8 bg-b-card animate-pulse rounded-sm w-3/4" />
+              <div className="space-y-2">
+                <div className="h-4 bg-b-card animate-pulse rounded-sm w-full" />
+                <div className="h-4 bg-b-card animate-pulse rounded-sm w-5/6" />
+                <div className="h-4 bg-b-card animate-pulse rounded-sm w-4/6" />
+              </div>
+              <div className="h-64 bg-b-card animate-pulse rounded-card w-full" />
+            </div>
+          ) : !guide ? (
+            <div className="text-center py-24 bg-b-card rounded-card border border-dashed border-b-border">
+              <Sparkles size={48} className="text-b-blue mx-auto mb-6 opacity-20" />
+              <h3 className="font-mono text-[18px] text-white font-bold mb-2">Nenhum guia gerado ainda</h3>
+              <p className="font-body text-[14px] text-b-text-ghost max-w-[320px] mx-auto mb-8">
+                Deixe nossa IA analisar seu código e criar um guia de onboarding completo em segundos.
+              </p>
+              <button 
+                onClick={handleGenerate}
+                disabled={generating}
+                className="inline-flex items-center gap-2 bg-white text-black font-mono text-[13px] px-8 py-3 rounded-btn font-bold hover:brightness-90 transition-all"
+              >
+                {generating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                Começar agora
+              </button>
+            </div>
+          ) : (
+            /* Markdown Content */
+            <div className="prose prose-invert max-w-none 
+              prose-headings:font-mono prose-headings:font-bold prose-headings:text-white 
+              prose-h2:text-b-green prose-h2:border-b prose-h2:border-b-border prose-h2:pb-2 prose-h2:mt-12
+              prose-p:font-body prose-p:text-b-text-secondary prose-p:leading-relaxed
+              prose-code:font-mono prose-code:bg-b-surface prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-sm prose-code:text-b-blue
+              prose-pre:bg-b-surface prose-pre:border prose-pre:border-b-border
+              prose-li:font-body prose-li:text-b-text-secondary
+            ">
+              <ReactMarkdown
+                components={{
+                  code({ node, inline, className, children, ...props }: any) {
+                    const match = /language-(\w+)/.exec(className || '');
+                    if (!inline && match && match[1] === 'mermaid') {
+                      return <div className="mermaid bg-white/5 p-8 rounded-card my-8 border border-b-border/30 flex justify-center">{String(children).replace(/\n$/, '')}</div>;
+                    }
+                    return (
+                      <code className={className} {...props}>
+                        {children}
+                      </code>
+                    );
+                  }
+                }}
+              >
+                {guide.contentMd}
+              </ReactMarkdown>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

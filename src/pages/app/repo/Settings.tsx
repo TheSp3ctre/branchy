@@ -1,168 +1,312 @@
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useBranchyStore } from '@/store/branchyStore';
-import { Trash2, RefreshCw } from 'lucide-react';
+import { Trash2, RefreshCw, Bell, ShieldAlert, Globe, Unlink, Check, AlertTriangle, Loader2, Plus, Settings2, ExternalLink } from 'lucide-react';
+import { repoSettingsService, RepoSettings } from '@/services/repoSettings';
+import { integrationsService, RepoIntegration } from '@/services/integrations';
+import { useAnalysisProgress } from '@/hooks/useAnalysisProgress';
+import { motion, AnimatePresence } from 'framer-motion';
 
-type SettingsTab = 'geral' | 'integracoes' | 'exportar';
+type SettingsTab = 'geral' | 'notificacoes' | 'integracoes' | 'danger';
+
+const INTEGRATION_META = {
+  slack: { 
+    name: 'Slack', 
+    fields: [
+      { id: 'bot_token', label: 'Bot Token', type: 'password', hint: 'xoxb-...' },
+      { id: 'default_channel', label: 'Canal padrão', type: 'text', hint: '#branchy-alerts' }
+    ]
+  },
+  jira: { 
+    name: 'Jira', 
+    fields: [
+      { id: 'domain', label: 'Domínio', type: 'text', hint: 'empresa.atlassian.net' },
+      { id: 'email', label: 'Email', type: 'email' },
+      { id: 'api_key', label: 'API Token', type: 'password' }
+    ]
+  },
+  notion: { 
+    name: 'Notion', 
+    fields: [
+      { id: 'token', label: 'Internal Integration Token', type: 'password', hint: 'secret_...' }
+    ]
+  }
+};
 
 export default function RepoSettingsPage() {
-  const { repoId } = useParams();
+  const { repoId } = useParams<{ repoId: string }>();
+  const navigate = useNavigate();
   const repo = useBranchyStore((s) => (repoId ? s.repos[repoId] : null));
+  
   const [activeTab, setActiveTab] = useState<SettingsTab>('geral');
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [autoAnalyze, setAutoAnalyze] = useState(false);
+  const [settings, setSettings] = useState<RepoSettings | null>(null);
+  const [integrations, setIntegrations] = useState<RepoIntegration[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [confirmName, setConfirmName] = useState('');
+  const [dangerAction, setDangerAction] = useState<'disconnect' | 'delete' | null>(null);
+  const [setupModal, setSetupModal] = useState<keyof typeof INTEGRATION_META | null>(null);
 
-  if (!repo) return <div className="p-6 font-mono text-b-text-ghost">// repositório não encontrado</div>;
+  const { progress, isRunning, startAnalysis } = useAnalysisProgress(repoId || '');
 
-  const tabs: { label: string; value: SettingsTab }[] = [
-    { label: 'Geral', value: 'geral' },
-    { label: 'Integrações', value: 'integracoes' },
-    { label: 'Exportar', value: 'exportar' },
-  ];
+  useEffect(() => {
+    async function loadData() {
+      if (!repoId) return;
+      try {
+        const [s, i] = await Promise.all([
+          repoSettingsService.get(repoId),
+          integrationsService.getRepoIntegrations(repoId)
+        ]);
+        setSettings(s);
+        setIntegrations(i);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, [repoId]);
 
-  const integrations = [
-    { name: 'GitHub Webhook', description: 'Receba notificações automáticas em cada push', enabled: true },
-    { name: 'Slack', description: 'Envie alertas de saúde para um canal Slack', enabled: false },
-    { name: 'Jira', description: 'Crie issues automaticamente a partir de problemas', enabled: false },
-    { name: 'Notion', description: 'Sincronize o onboarding guide com uma página Notion', enabled: false },
-  ];
+  const handleUpdate = async (patch: Partial<RepoSettings>) => {
+    if (!repoId || !settings) return;
+    const newSettings = { ...settings, ...patch };
+    setSettings(newSettings);
+    await repoSettingsService.update(repoId, patch);
+  };
 
-  const exportFormats = [
-    { name: 'Architecture diagram', formats: ['PNG', 'SVG'] },
-    { name: 'Dependency graph', formats: ['PNG', 'SVG'] },
-    { name: 'Onboarding guide', formats: ['PDF', 'Markdown'] },
-    { name: 'Full report', formats: ['PDF'] },
+  const handleToggleIntegration = async (provider: string, active: boolean) => {
+    if (!repoId) return;
+    await integrationsService.toggle(repoId, provider, active);
+    const i = await integrationsService.getRepoIntegrations(repoId);
+    setIntegrations(i);
+  };
+
+  if (!repo || loading) return <div className="p-12 font-mono text-b-text-ghost flex items-center gap-2"><Loader2 className="animate-spin" size={16}/> carregando configurações...</div>;
+
+  const tabs: { label: string; value: SettingsTab; icon: any }[] = [
+    { label: 'Geral', value: 'geral', icon: Globe },
+    { label: 'Notificações', value: 'notificacoes', icon: Bell },
+    { label: 'Integrações', value: 'integracoes', icon: Settings2 },
+    { label: 'Danger Zone', value: 'danger', icon: ShieldAlert },
   ];
 
   return (
-    <div className="p-6 max-w-[640px]">
-      {/* Tab pills */}
-      <div className="flex gap-1.5 mb-6">
+    <div className="p-8 max-w-[720px] mx-auto">
+      {/* Sidebar-lite Tabs */}
+      <div className="flex gap-4 mb-10 border-b-[0.5px] border-b-border pb-4 overflow-x-auto scrollbar-none">
         {tabs.map((t) => (
           <button
             key={t.value}
             onClick={() => setActiveTab(t.value)}
-            className={`font-mono text-[12px] px-3 py-1.5 rounded-btn transition-colors duration-150 ${
+            className={`flex items-center gap-2 font-mono text-[12px] px-4 py-2 rounded-btn transition-all whitespace-nowrap ${
               activeTab === t.value
-                ? 'bg-b-card text-b-text border-[0.5px] border-b-border'
-                : 'text-b-text-muted hover:text-b-text-secondary'
+                ? 'bg-white text-black font-bold'
+                : 'text-b-text-ghost hover:text-white'
             }`}
           >
-            {t.label}
+            <t.icon size={14} /> {t.label}
           </button>
         ))}
       </div>
 
-      {/* Geral */}
-      {activeTab === 'geral' && (
-        <div className="space-y-6">
-          <div>
-            <label className="font-mono text-[10px] text-b-text-ghost uppercase block mb-1.5">NOME DO REPOSITÓRIO</label>
-            <input
-              defaultValue={repo.repoName}
-              className="w-full bg-b-surface border-[0.5px] border-b-border-subtle rounded-btn px-3 py-2 font-mono text-[13px] text-b-text outline-none focus:border-b-blue transition-colors duration-150"
-            />
-          </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.2 }}
+        >
+          {/* Geral */}
+          {activeTab === 'geral' && (
+            <div className="space-y-8">
+              <section>
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="font-mono text-[14px] text-white">Full Re-Analysis</h3>
+                    <p className="font-body text-[12px] text-b-text-ghost mt-1">Sincroniza commits, deps, deadcode e recalcula o Score de Saúde.</p>
+                  </div>
+                  <button 
+                    onClick={startAnalysis}
+                    disabled={isRunning}
+                    className="flex items-center gap-2 font-mono text-[12px] bg-white text-black px-4 py-2 rounded-btn hover:brightness-90 transition-all disabled:opacity-50"
+                  >
+                    {isRunning ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                    {isRunning ? 'Em progresso...' : 'Reanalisar agora'}
+                  </button>
+                </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-mono text-[13px] text-b-text">Reanalisar agora</div>
-              <div className="font-body text-[12px] text-b-text-muted mt-0.5">Última análise: {new Date(repo.analyzedAt).toLocaleString()}</div>
-            </div>
-            <button className="flex items-center gap-1.5 font-mono text-[12px] text-b-text-secondary border-[0.5px] border-b-border-subtle rounded-btn px-3 py-1.5 hover:bg-b-card transition-colors duration-150">
-              <RefreshCw size={13} /> Reanalisar
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-mono text-[13px] text-b-text">Auto-analyze on push</div>
-              <div className="font-body text-[12px] text-b-text-muted mt-0.5">Re-analisa automaticamente quando detecta um push</div>
-            </div>
-            <button
-              onClick={() => setAutoAnalyze(!autoAnalyze)}
-              className={`w-10 h-5 rounded-full transition-colors duration-150 relative ${autoAnalyze ? 'bg-b-green' : 'bg-b-border-subtle'}`}
-            >
-              <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-150 ${autoAnalyze ? 'translate-x-5' : 'translate-x-0.5'}`} />
-            </button>
-          </div>
-
-          <div className="border-[0.5px] border-b-red-border rounded-card p-5 mt-6">
-            <div className="font-mono text-[13px] text-b-red mb-2">Danger zone</div>
-            <p className="font-body text-[12px] text-b-text-muted mb-3">Remover este repositório e todos os dados de análise. Esta ação é irreversível.</p>
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              className="flex items-center gap-1.5 font-mono text-[12px] text-b-red border-[0.5px] border-b-red-border rounded-btn px-3 py-1.5 hover:bg-b-red-bg transition-colors duration-150"
-            >
-              <Trash2 size={13} /> Remover repositório
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Integrations */}
-      {activeTab === 'integracoes' && (
-        <div className="space-y-3">
-          {integrations.map((int) => (
-            <div key={int.name} className="bg-b-card border-[0.5px] border-b-border rounded-card p-4 flex items-center justify-between">
-              <div>
-                <div className="font-mono text-[13px] text-white">{int.name}</div>
-                <div className="font-body text-[12px] text-b-text-muted mt-0.5">{int.description}</div>
-              </div>
-              <div className="flex items-center gap-3">
-                {int.enabled && (
-                  <button className="font-mono text-[11px] text-b-green hover:underline">Configurar →</button>
+                {progress && (
+                  <div className="bg-b-card border border-b-blue/30 rounded-card p-4 space-y-3">
+                    <div className="flex justify-between font-mono text-[11px]">
+                      <span className="text-b-blue animate-pulse">{progress.step_label}</span>
+                      <span className="text-white">{progress.percentage}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-b-surface rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress.percentage}%` }}
+                        className="h-full bg-b-blue" 
+                      />
+                    </div>
+                  </div>
                 )}
-                <div className={`w-8 h-4 rounded-full ${int.enabled ? 'bg-b-green' : 'bg-b-border-subtle'} relative`}>
-                  <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform duration-150 ${int.enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </section>
+
+              <div className="h-[1px] bg-b-border" />
+
+              <section className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-mono text-[13px] text-white">Auto-analyze on push</div>
+                    <div className="font-body text-[12px] text-b-text-ghost mt-0.5">Disparar scanners detectando novos commits</div>
+                  </div>
+                  <button
+                    onClick={() => handleUpdate({ autoAnalyse: !settings?.autoAnalyse })}
+                    className={`w-10 h-5 rounded-full transition-colors relative ${settings?.autoAnalyse ? 'bg-b-blue' : 'bg-b-border-subtle'}`}
+                  >
+                    <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${settings?.autoAnalyse ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                  </button>
+                </div>
+              </section>
+            </div>
+          )}
+
+          {/* Integrações */}
+          {activeTab === 'integracoes' && (
+            <div className="space-y-4">
+              {(['slack', 'jira', 'notion'] as const).map((provider) => {
+                const config = integrations.find(i => i.provider === provider);
+                const isConnected = !!config;
+                const isActive = config?.status === 'active';
+
+                return (
+                  <div key={provider} className="bg-b-card border border-b-border rounded-card p-5 group hover:border-b-text-ghost transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-b-surface flex items-center justify-center rounded-card border border-b-border">
+                          <img src={`/integrations/${provider}.svg`} alt={provider} className="w-5 h-5 opacity-80" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-[14px] text-white capitalize">{provider}</span>
+                            {isActive && <span className="w-1.5 h-1.5 rounded-full bg-b-green animate-pulse" />}
+                          </div>
+                          <div className="font-body text-[11px] text-b-text-ghost mt-0.5">
+                            {isConnected ? `Conectado a ${config.workspaceName || 'Workspace'}` : 'Não configurado'}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4">
+                        {!isConnected ? (
+                          <button 
+                            onClick={() => setSetupModal(provider)}
+                            className="flex items-center gap-1.5 font-mono text-[11px] text-b-blue border border-b-blue/30 px-3 py-1.5 rounded-btn hover:bg-b-blue/10 transition-all"
+                          >
+                            <Plus size={12} /> Configurar
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-3">
+                            <button 
+                              onClick={() => setSetupModal(provider)}
+                              className="p-1.5 text-b-text-ghost hover:text-white transition-colors"
+                            >
+                              <Settings2 size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleToggleIntegration(provider, !isActive)}
+                              className={`w-9 h-4.5 rounded-full transition-colors relative ${isActive ? 'bg-b-green' : 'bg-b-border-subtle'}`}
+                            >
+                              <div className={`absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform ${isActive ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Notificações */}
+          {activeTab === 'notificacoes' && (
+            <div className="space-y-6 bg-b-card border border-b-border rounded-card p-6">
+              {[
+                { key: 'notifyOnScoreDrop' as const, label: 'Queda de Saúde', desc: 'Alertar se o score cair mais de 5 pontos' },
+                { key: 'notifyOnCriticalVuln' as const, label: 'Vulnerabilidades Críticas', desc: 'Alertar imediatamente sobre CVEs graves' },
+                { key: 'notifyOnCompletion' as const, label: 'Análise Finalizada', desc: 'Notificar sempre que um job de orquestração terminar' }
+              ].map((item) => (
+                <div key={item.key} className="flex items-center justify-between">
+                  <div>
+                    <div className="font-mono text-[13px] text-white">{item.label}</div>
+                    <div className="font-body text-[12px] text-b-text-ghost mt-0.5">{item.desc}</div>
+                  </div>
+                  <button
+                    onClick={() => handleUpdate({ [item.key]: !settings?.[item.key] })}
+                    className={`w-10 h-5 rounded-full transition-colors relative ${settings?.[item.key] ? 'bg-b-blue' : 'bg-b-border-subtle'}`}
+                  >
+                    <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${settings?.[item.key] ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Danger Zone */}
+          {activeTab === 'danger' && (
+            <div className="space-y-4">
+              <div className="border border-b-red-border/30 rounded-card p-6 bg-b-red-bg/10 group hover:border-b-red-border transition-colors">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h4 className="font-mono text-[14px] text-b-red flex items-center gap-2">
+                      <Unlink size={14} /> Desconectar Repositório
+                    </h4>
+                    <p className="font-body text-[12px] text-b-text-ghost mt-1 max-w-[400px]">
+                      Remove o repositório do Branchy. Dados de análise serão preservados por 30 dias. Código no GitHub permanece intacto.
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => setDangerAction('disconnect')}
+                    className="font-mono text-[11px] border border-b-red-border text-b-red px-4 py-2 rounded-btn hover:bg-b-red hover:text-white transition-all shadow-lg"
+                  >
+                    Desconectar
+                  </button>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          )}
+        </motion.div>
+      </AnimatePresence>
 
-
-      {/* Export */}
-      {activeTab === 'exportar' && (
-        <div className="space-y-3">
-          {exportFormats.map((exp) => (
-            <div key={exp.name} className="bg-b-card border-[0.5px] border-b-border rounded-card p-4 flex items-center justify-between">
-              <span className="font-mono text-[13px] text-white">{exp.name}</span>
-              <div className="flex gap-2">
-                {exp.formats.map((f) => (
-                  <button key={f} className="font-mono text-[11px] text-b-text-secondary border-[0.5px] border-b-border-subtle rounded-btn px-2 py-1 hover:bg-b-elevated transition-colors duration-150">
-                    {f}
-                  </button>
-                ))}
+      {/* Setup Modal */}
+      {setupModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-b-card border border-b-border rounded-card p-8 max-w-[440px] w-full">
+            <h3 className="font-mono text-[18px] text-white font-bold mb-2">Conectar {INTEGRATION_META[setupModal].name}</h3>
+            <p className="font-body text-[12px] text-b-text-ghost mb-6">Insira as credenciais para integrar este repositório.</p>
+            
+            <div className="space-y-4">
+              {INTEGRATION_META[setupModal].fields.map(f => (
+                <div key={f.id}>
+                  <label className="font-mono text-[10px] text-b-text-ghost uppercase mb-1.5 block">{f.label}</label>
+                  <input 
+                    type={f.type} 
+                    className="w-full bg-b-surface border border-b-border rounded-btn px-4 py-2.5 font-mono text-[13px] text-white outline-none focus:border-b-blue transition-all"
+                    placeholder={f.hint}
+                  />
+                </div>
+              ))}
+              
+              <div className="flex gap-3 pt-4">
+                <button onClick={() => setSetupModal(null)} className="flex-1 font-mono text-[12px] text-b-text-ghost py-2">Cancelar</button>
+                <button className="flex-1 bg-white text-black font-mono text-[12px] py-2 rounded-btn font-bold hover:brightness-90">Validar e Salvar</button>
               </div>
             </div>
-          ))}
+          </motion.div>
         </div>
       )}
 
-      {/* Delete modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-b-card border-[0.5px] border-b-border rounded-card p-6 max-w-[400px] w-full mx-4">
-            <h3 className="font-mono text-[16px] text-white mb-2">Remover repositório</h3>
-            <p className="font-body text-[13px] text-b-text-secondary mb-4">
-              Tem certeza que deseja remover <strong>{repo.owner}/{repo.repoName}</strong>? Esta ação é irreversível.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="font-mono text-[12px] text-b-text-secondary border-[0.5px] border-b-border-subtle rounded-btn px-3 py-1.5 hover:bg-b-elevated transition-colors duration-150"
-              >
-                Cancelar
-              </button>
-              <button className="font-mono text-[12px] text-white bg-b-red rounded-btn px-3 py-1.5 hover:opacity-80 transition-opacity duration-150">
-                Confirmar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Confirmation Modals for Danger actions here... */}
     </div>
   );
 }

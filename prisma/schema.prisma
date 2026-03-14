@@ -22,3 +22,205 @@ model Job {
   updatedAt       DateTime @updatedAt
 }
 
+model RepoCommit {
+  id            String   @id @default(uuid())
+  repoId        String
+  commitHash    String
+  author        String
+  message       String
+  date          DateTime
+  filesChanged  Int
+  aiSummary     String?
+  createdAt     DateTime @default(now())
+
+  @@index([repoId])
+}
+
+model CommitSyncState {
+  repoId     String   @id
+  lastSha    String
+  lastSynced DateTime @default(now())
+}
+
+model DependencyScan {
+  id              String    @id @default(uuid())
+  repoId          String
+  triggeredBy     String    // auto, manual, commit
+  status          String    // pending, running, completed, failed
+  packagesTotal   Int       @default(0)
+  vulnerabilities Int       @default(0)
+  outdated        Int       @default(0)
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
+
+  @@index([repoId])
+}
+
+model DependencyIssue {
+  id               String   @id @default(uuid())
+  scanId           String
+  repoId           String
+  packageName      String
+  currentVersion   String?
+  latestVersion    String?
+  category         String   // vulnerability, outdated, missing
+  severity         String   // critical, high, medium, low, info
+  fixAvailable     Boolean  @default(false)
+  fixVersion       String?
+  aiRecommendation String?
+  createdAt        DateTime @default(now())
+
+  @@index([repoId, severity])
+}
+
+model DeadcodeRun {
+  id            String    @id @default(uuid())
+  repoId        String
+  triggeredBy   String    // manual, auto, commit
+  status        String    // pending, running, completed, failed
+  startedAt     DateTime  @default(now())
+  completedAt     DateTime?
+  filesScanned  Int       @default(0)
+  aiSummary     String?
+
+  @@index([repoId])
+}
+
+model DeadcodeIssue {
+  id            String   @id @default(uuid())
+  runId         String
+  repoId        String
+  type          String   // dead-code, vulnerability, complexity, etc
+  severity      String   // critical, high, medium, low, info
+  filePath      String
+  lineStart     Int?
+  symbol        String?
+  message       String
+  fixSuggestion String?
+  createdAt     DateTime @default(now())
+
+  @@index([repoId, severity])
+  @@index([runId])
+}
+
+model CodeHealthRun {
+  id             String   @id @default(uuid())
+  repoId         String
+  scoreOverall   Decimal  @db.Decimal(5, 2)
+  scoreSecurity  Decimal? @db.Decimal(5, 2)
+  scoreArch      Decimal? @db.Decimal(5, 2)
+  scoreMaintain  Decimal? @db.Decimal(5, 2)
+  scoreTests     Decimal? @db.Decimal(5, 2)
+  scoreDocs      Decimal? @db.Decimal(5, 2)
+  deltaScore     Decimal? @db.Decimal(5, 2)
+  triggeredBy    String
+  aiSummary      String?
+  createdAt      DateTime @default(now())
+
+  @@index([repoId])
+}
+
+model CodeHealthIssue {
+  id            String   @id @default(uuid())
+  runId         String
+  repoId        String
+  dimension     String   // security, architecture, maintainability, tests, documentation
+  severity      String
+  message       String
+  aiExplanation String?
+  aiFix         String?
+  createdAt     DateTime @default(now())
+
+  @@index([repoId, severity])
+  @@index([runId])
+}
+
+model RepoSettings {
+  repoId              String   @id
+  autoAnalyse         Boolean  @default(true)
+  autoAnalyseScope    String[] @default(["code_health", "deadcode", "dependencies", "changelog"])
+  analyseOnCommit     Boolean  @default(true)
+  analyseIntervalMin  Int      @default(60)
+  
+  notifyOnScoreDrop   Boolean  @default(true)
+  scoreDropThreshold  Int      @default(5)
+  notifyOnCriticalVuln Boolean @default(true)
+  notifyOnCompletion  Boolean  @default(false)
+  notificationChannels String[] @default(["in-app"])
+  
+  lastAnalysisAt      DateTime?
+  lastAnalysisScore   Decimal? @db.Decimal(5, 2)
+  updatedAt           DateTime @default(now())
+
+  @@index([repoId])
+}
+
+model RepoDestructiveOp {
+  id                String   @id @default(uuid())
+  repoId            String
+  userId            String?
+  operation         String   // disconnect | delete_github
+  repoName          String
+  repoOwner         String
+  confirmedByTyping Boolean  @default(false)
+  n8nWorkflowId     String?
+  executedAt        DateTime @default(now())
+}
+
+model OnboardingGuide {
+  id                String   @id @default(uuid())
+  repoId            String
+  persona           String   // developer | stakeholder | auditor
+  title             String
+  contentMd         String   @db.Text
+  stackBadges       String[]
+  mermaidArch       String?  @db.Text
+  wordCount         Int?
+  modelUsed         String   @default("claude-3-5-sonnet")
+  generationTimeMs  Int?
+  createdAt         DateTime @default(now())
+
+  @@index([repoId])
+}
+
+model UserIntegration {
+  id              String   @id @default(uuid())
+  userId          String
+  provider        String   // slack | notion | github | jira
+  vaultSecretId   String?  // Referência ao Supabase Vault
+  workspaceName   String?
+  workspaceUrl    String?
+  connectedAt     DateTime @default(now())
+  lastValidated   DateTime?
+  validationError String?
+
+  @@unique([userId, provider])
+}
+
+model RepoIntegrationConfig {
+  id              String   @id @default(uuid())
+  repoId          String
+  provider        String   // slack | notion | github | jira
+  status          String   @default("not_configured") // not_configured | configured | active | error
+  slackChannelId  String?
+  notionPageId    String?
+  jiraProjectKey  String?
+  notifyEvents    String[] @default([])
+  lastSyncAt      DateTime?
+  errorMessage    String?
+  updatedAt       DateTime @default(now())
+
+  @@unique([repoId, provider])
+}
+
+model IntegrationEvent {
+  id          String   @id @default(uuid())
+  repoId      String
+  provider    String
+  eventType   String
+  payload     Json?
+  status      String   // sent | failed | skipped
+  error       String?
+  createdAt   DateTime @default(now())
+}
+
