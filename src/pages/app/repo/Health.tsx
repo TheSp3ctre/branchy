@@ -90,7 +90,7 @@ export default function HealthPage() {
           </div>
           <div className="flex items-center gap-2 mb-3">
             <Sparkles size={16} className="text-b-blue" />
-            <span className="font-mono text-[11px] text-b-blue uppercase tracking-wider font-bold">Resumo Executivo (IA)</span>
+            <span className="font-mono text-[11px] text-b-blue uppercase tracking-wider font-bold">Resumo Executivo</span>
           </div>
           <p className="font-body text-[15px] text-white leading-relaxed">
             {lastRun.aiSummary}
@@ -168,7 +168,7 @@ export default function HealthPage() {
                     <div className="px-5 pb-6 pt-2 border-t-[0.5px] border-b-border">
                       <div className="grid grid-cols-2 gap-6 mt-4">
                         <div>
-                          <span className="font-mono text-[10px] text-b-text-ghost uppercase tracking-wider block mb-2">Impacto (IA)</span>
+                          <span className="font-mono text-[10px] text-b-text-ghost uppercase tracking-wider block mb-2">Impacto</span>
                           <p className="font-body text-[13px] text-b-text-secondary leading-relaxed">
                             {issue.aiExplanation || 'A IA não forneceu uma explicação para esta issue.'}
                           </p>

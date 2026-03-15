@@ -48,10 +48,6 @@ export function RepoSidebar() {
 
   return (
     <aside className="w-[220px] bg-b-surface border-r-[0.5px] border-b-border shrink-0 sticky top-[52px] h-[calc(100vh-52px)] flex flex-col overflow-y-auto">
-      {/* Logo Area (Added) */}
-      <div className="p-4 border-b-[0.5px] border-b-border flex items-center justify-center">
-        <img src="https://i.imgur.com/WKFvZgA.png" alt="branchy" className="h-9 w-auto opacity-80" />
-      </div>
 
       {/* Repo info */}
       <div className="p-4 border-b-[0.5px] border-b-border">
@@ -86,13 +82,6 @@ export function RepoSidebar() {
         ))}
       </nav>
 
-      {/* Plan badge */}
-      <div className="p-4 border-t-[0.5px] border-b-border">
-        <span className="font-mono text-[10px] bg-b-elevated text-b-text-muted px-2 py-0.5 rounded-full">FREE</span>
-        <button className="block mt-2 font-mono text-[11px] text-b-green hover:underline">
-          Upgrade →
-        </button>
-      </div>
     </aside>
   );
 }

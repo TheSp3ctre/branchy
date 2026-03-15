@@ -127,10 +127,6 @@ export default function OnboardingPage() {
           {/* Header */}
           <div className="flex items-center justify-between mb-12 border-b border-b-border pb-8">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="bg-b-blue-bg text-b-blue text-[10px] font-mono px-2 py-0.5 rounded-sm uppercase">AI Generated</span>
-                <span className="text-b-text-ghost font-mono text-[10px] uppercase">{guide?.modelUsed || 'Claude 3.5 Sonnet'}</span>
-              </div>
               <h1 className="font-mono text-[28px] text-white font-bold leading-tight">
                 {guide?.title || `Guia de Onboarding — ${repo.repoName}`}
               </h1>

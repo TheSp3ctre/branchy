@@ -185,7 +185,7 @@ export default function DeadCodePage() {
 
               {issue.fixSuggestion && (
                 <div className="mt-4 bg-b-surface border-l-2 border-b-green p-3 rounded-r-card">
-                  <span className="font-mono text-[10px] text-b-green uppercase tracking-wider font-bold block mb-1">IA Fix Suggestion</span>
+                  <span className="font-mono text-[10px] text-b-green uppercase tracking-wider font-bold block mb-1">Sugestão de Correção</span>
                   <p className="font-body text-[12px] text-b-text-muted italic">
                     {issue.fixSuggestion}
                   </p>
