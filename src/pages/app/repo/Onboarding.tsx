@@ -158,22 +158,6 @@ export default function OnboardingPage() {
               </div>
               <div className="h-64 bg-b-card animate-pulse rounded-card w-full" />
             </div>
-          ) : !guide ? (
-            <div className="text-center py-24 bg-b-card rounded-card border border-dashed border-b-border">
-              <Sparkles size={48} className="text-b-blue mx-auto mb-6 opacity-20" />
-              <h3 className="font-mono text-[18px] text-white font-bold mb-2">Nenhum guia gerado ainda</h3>
-              <p className="font-body text-[14px] text-b-text-ghost max-w-[320px] mx-auto mb-8">
-                Deixe nossa IA analisar seu código e criar um guia de onboarding completo em segundos.
-              </p>
-              <button 
-                onClick={handleGenerate}
-                disabled={generating}
-                className="inline-flex items-center gap-2 bg-white text-black font-mono text-[13px] px-8 py-3 rounded-btn font-bold hover:brightness-90 transition-all"
-              >
-                {generating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                Começar agora
-              </button>
-            </div>
           ) : (
             <>
               {/* Markdown Content */}
