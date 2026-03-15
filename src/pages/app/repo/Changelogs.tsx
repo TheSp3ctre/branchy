@@ -3,9 +3,11 @@ import { useState, useEffect } from 'react';
 import { timeAgo } from '@/lib/branchy-utils';
 import { changelogService, RepoCommit } from '@/services/changelog';
 import { n8nService } from '@/services/n8n';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ChangelogsPage() {
   const { repoId } = useParams<{ repoId: string }>();
+  const { user } = useAuth();
   const [commits, setCommits] = useState<RepoCommit[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -14,7 +16,8 @@ export default function ChangelogsPage() {
     if (!repoId) return;
     try {
       setLoading(true);
-      const data = await changelogService.getCommits(repoId);
+      const userName = user?.user_metadata?.full_name || user?.user_metadata?.user_name;
+      const data = await changelogService.getCommits(repoId, userName);
       setCommits(data);
     } catch (err) {
       console.error('Failed to fetch commits:', err);
@@ -98,9 +101,15 @@ export default function ChangelogsPage() {
                 <div className="bg-b-card border-[0.5px] border-b-border rounded-card p-4 ml-4 hover:border-b-green/30 transition-colors group">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="font-mono text-[11px] text-b-text-ghost">{cl.commitHash.substring(0, 7)}</span>
-                    <span className="w-5 h-5 rounded-full bg-b-blue-bg text-b-blue font-mono text-[9px] flex items-center justify-center">
-                      {cl.author.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                    </span>
+                    <div className="w-5 h-5 rounded-full overflow-hidden border-[0.5px] border-b-border-subtle shrink-0">
+                      {user?.user_metadata?.avatar_url && cl.author === (user?.user_metadata?.full_name || user?.user_metadata?.user_name) ? (
+                        <img src={user.user_metadata.avatar_url} alt={cl.author} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-b-blue-bg text-b-blue font-mono text-[9px] flex items-center justify-center">
+                          {cl.author.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
                     <span className="font-body text-[12px] text-b-text-muted">{cl.author}</span>
                     <span className="font-body text-[11px] text-b-text-ghost ml-auto">{timeAgo(cl.date)}</span>
                   </div>

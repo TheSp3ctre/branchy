@@ -13,7 +13,7 @@ export interface RepoCommit {
 }
 
 export const changelogService = {
-  async getCommits(repoId: string): Promise<RepoCommit[]> {
+  async getCommits(repoId: string, currentUserName?: string): Promise<RepoCommit[]> {
     const { data, error } = await supabase
       .from('repo_commits')
       .select('*')
@@ -26,12 +26,13 @@ export const changelogService = {
     }
     
     if (!data || data.length === 0) {
+      const userName = currentUserName || 'Desenvolvedor';
       return [
         {
           id: 'mock-c1',
           repoId,
           commitHash: 'a1b2c3d4',
-          author: 'AI Developer',
+          author: userName,
           message: 'feat: implement advanced neural pattern recognition',
           date: new Date(Date.now() - 3600000).toISOString(),
           filesChanged: 12,
@@ -42,7 +43,7 @@ export const changelogService = {
           id: 'mock-c2',
           repoId,
           commitHash: 'e5f6g7h8',
-          author: 'Matheus Braga',
+          author: userName,
           message: 'fix: resolve memory leak in connection pool',
           date: new Date(Date.now() - 7200000).toISOString(),
           filesChanged: 2,
@@ -53,7 +54,7 @@ export const changelogService = {
           id: 'mock-c3',
           repoId,
           commitHash: 'i9j0k1l2',
-          author: 'Barbara Lopes',
+          author: userName,
           message: 'docs: update architecture documentation',
           date: new Date(Date.now() - 86400000).toISOString(),
           filesChanged: 5,
