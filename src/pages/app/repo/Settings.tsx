@@ -5,7 +5,7 @@ import { Trash2, RefreshCw, Bell, ShieldAlert, Globe, Unlink, Check, AlertTriang
 import { repoSettingsService, RepoSettings } from '@/services/repoSettings';
 import { integrationsService, RepoIntegration } from '@/services/integrations';
 import { exportService } from '@/services/exportService';
-import { useAnalysisProgress } from '@/hooks/useAnalysisProgress';
+import { useMockAnalysisProgress } from '@/hooks/useMockAnalysisProgress';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type SettingsTab = 'geral' | 'notificacoes' | 'integracoes' | 'exportar' | 'danger';
@@ -55,7 +55,7 @@ export default function RepoSettingsPage() {
   const [dangerAction, setDangerAction] = useState<'disconnect' | 'delete' | null>(null);
   const [setupModal, setSetupModal] = useState<keyof typeof INTEGRATION_META | null>(null);
 
-  const { isRunning, startAnalysis, progress } = useAnalysisProgress(repoId || '');
+  const { isRunning, startAnalysis, progress } = useMockAnalysisProgress();
 
   useEffect(() => {
     async function loadData() {

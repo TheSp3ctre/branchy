@@ -227,19 +227,40 @@ export default function ConnectModal({ onDismiss }: ConnectModalProps) {
 
   // ── Fetch repos ──────────────────────────────
   useEffect(() => {
-    if (!session?.provider_token) {
-      setReposLoading(false);
-      return;
-    }
-    fetch('https://api.github.com/user/repos?sort=updated&per_page=20', {
-      headers: { Authorization: `Bearer ${session.provider_token}` },
-    })
-      .then((r) => r.json())
-      .then((data: GithubRepo[]) => {
-        setRepos(Array.isArray(data) ? data : []);
+    const fetchRepos = async () => {
+      if (!session?.provider_token) {
+        // Mock repos for prototype
+        setRepos([
+          { id: 1, name: 'branchy-core', full_name: 'TheSp3ctre/branchy-core', owner: { login: 'TheSp3ctre' }, language: 'TypeScript', visibility: 'public', updated_at: new Date().toISOString(), private: false },
+          { id: 2, name: 'nexus-engine', full_name: 'TheSp3ctre/nexus-engine', owner: { login: 'TheSp3ctre' }, language: 'Go', visibility: 'private', updated_at: new Date().toISOString(), private: true },
+          { id: 3, name: 'documentation-site', full_name: 'TheSp3ctre/documentation-site', owner: { login: 'TheSp3ctre' }, language: 'CSS', visibility: 'public', updated_at: new Date().toISOString(), private: false },
+        ]);
         setReposLoading(false);
-      })
-      .catch(() => setReposLoading(false));
+        return;
+      }
+
+      try {
+        const r = await fetch('https://api.github.com/user/repos?sort=updated&per_page=20', {
+          headers: { Authorization: `Bearer ${session.provider_token}` },
+        });
+        const data = await r.json();
+        if (Array.isArray(data)) {
+          setRepos(data);
+        } else {
+          throw new Error('Invalid data');
+        }
+      } catch (err) {
+        // Fallback to mock on error
+        setRepos([
+          { id: 1, name: 'branchy-core', full_name: 'TheSp3ctre/branchy-core', owner: { login: 'TheSp3ctre' }, language: 'TypeScript', visibility: 'public', updated_at: new Date().toISOString(), private: false },
+          { id: 2, name: 'nexus-engine', full_name: 'TheSp3ctre/nexus-engine', owner: { login: 'TheSp3ctre' }, language: 'Go', visibility: 'private', updated_at: new Date().toISOString(), private: true },
+        ]);
+      } finally {
+        setReposLoading(false);
+      }
+    };
+
+    fetchRepos();
   }, [session]);
 
   // ── Task runner (n8n Polling) ────────────────
@@ -306,39 +327,71 @@ export default function ConnectModal({ onDismiss }: ConnectModalProps) {
     }, 2000);
   }, []);
 
+  const runMockTasks = useCallback(async () => {
+    if (runningRef.current) return;
+    runningRef.current = true;
+
+    setTasks(INITIAL_TASKS.map(t => ({ ...t, status: 'pending' })));
+    
+    let taskList = INITIAL_TASKS.map((t) => ({ ...t }));
+    
+    for (let i = 0; i < taskList.length; i++) {
+      // Set current task to running
+      taskList[i].status = 'running';
+      setTasks([...taskList]);
+      
+      // Artificial delay for the video
+      const delay = TASK_DELAYS[taskList[i].id] || 1500;
+      await new Promise(r => setTimeout(r, delay));
+      
+      // Complete task
+      taskList[i].status = 'complete';
+      taskList[i].duration = delay / 1000;
+      setTasks([...taskList]);
+    }
+
+    // Prepare mock final results
+    setRealResult({
+      ...mockRepoTemplate,
+      repoId: selectedRepo?.name || 'demo-repo',
+      repoName: selectedRepo?.name || 'demo-repo',
+      owner: selectedRepo?.owner.login || 'owner',
+      language: selectedRepo?.language || 'TypeScript',
+      filesCount: 142,
+      healthScore: 88,
+      analyzedAt: new Date().toISOString(),
+    });
+
+    setAnalysisStats({
+      files: 142,
+      healthScore: 88,
+      issues: 12,
+    });
+
+    await new Promise((r) => setTimeout(r, 1000));
+    setStepTransitionKey((k) => k + 1);
+    setStep('complete');
+    runningRef.current = false;
+  }, [selectedRepo]);
+
   // ── Transition to step 2 ─────────────────────
   const handleAnalyze = async () => {
-    if (!selectedRepo || !session?.provider_token) return;
+    if (!selectedRepo) return;
     setStepTransitionKey((k) => k + 1);
     setStep('analyzing');
-
-    try {
-      const res = await fetch(N8N_WEBHOOKS.ANALYZE_REPO, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          repoUrl: selectedRepo.full_name,
-          repoName: selectedRepo.name,
-          owner: selectedRepo.owner.login,
-          token: session.provider_token,
-        }),
-      });
-      const data = await res.json();
-      if (data.jobId) {
-        setJobId(data.jobId);
-        runTasks(data.jobId);
-      }
-    } catch (err) {
-      console.error('Failed to start analysis:', err);
-    }
+    
+    // Always use mock for prototype video as requested
+    runMockTasks();
   };
 
   // ── Step 3 → navigate ────────────────────────
   const handleViewResults = () => {
     if (selectedRepo && realResult) {
       const repoId = selectedRepo.name;
-      // Persist the real result from n8n
+      
+      // Persist the real result (this populates the dashboard grid)
       addRepo(realResult);
+      
       addRecentRepo({
         repoId,
         repoUrl: selectedRepo.full_name,
@@ -347,30 +400,7 @@ export default function ConnectModal({ onDismiss }: ConnectModalProps) {
         status: 'analyzed',
         analyzedAt: new Date().toISOString(),
       });
-      setFading(true);
-      setTimeout(() => {
-        setVisible(false);
-        onDismiss?.();
-        navigate(`/app/repo/${repoId}`);
-      }, 200);
-    } else if (selectedRepo) {
-      // Fallback to mock if real result missing (should not happen in success flow)
-      const repoId = selectedRepo.name;
-      addRepo({
-        ...mockRepoTemplate,
-        repoId,
-        repoName: selectedRepo.name,
-        owner: selectedRepo.owner.login,
-        language: selectedRepo.language || 'TypeScript',
-        filesCount: analysisStats.files,
-        healthScore: analysisStats.healthScore,
-        healthReport: {
-          ...mockRepoTemplate.healthReport,
-          overallScore: analysisStats.healthScore,
-        },
-        analyzedAt: new Date().toISOString(),
-      });
-      // ... same as before
+
       setFading(true);
       setTimeout(() => {
         setVisible(false);
