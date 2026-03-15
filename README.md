@@ -1,5 +1,4 @@
 <div align="center">
-<a> Time </a>
 
 <img src="https://i.imgur.com/WKFvZgA.png" alt="branchy." width="220" />
 
@@ -19,6 +18,7 @@
 <br/>
 
 <table border="0">
+  <a> Time </a>
   <tr>
     <td align="center">
       <img src="https://i.imgur.com/lPzcqMU.png" width="100px;" alt="Matheus Braga" style="border-radius: 50%;"/><br>
