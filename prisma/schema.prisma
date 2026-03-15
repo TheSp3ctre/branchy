@@ -14,13 +14,15 @@ datasource db {
 
 model Job {
   id              String   @id @default(uuid())
-  repoUrl         String
-  repoName        String
+  jobId           String?  @map("job_id")
+  repoUrl         String   @map("repo_url")
+  repoName        String   @map("repo_name")
   owner           String
   status          String   @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
-  analysisResult  Json?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  analysisResult  Json?    @map("analysis_result")
+  startedAt       DateTime? @map("started_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt      @map("updated_at")
 }
 
 model RepoCommit {
