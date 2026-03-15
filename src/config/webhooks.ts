@@ -11,7 +11,6 @@ const N8N_BASE_URL = import.meta.env.VITE_N8N_BASE_URL || 'https://n8n.srv120547
 
 export const N8N_WEBHOOKS = {
   ANALYZE_REPO: `${N8N_BASE_URL}/analyze-repo`,
-  GET_STATUS: `${N8N_BASE_URL}/repo-status`,
   SYNC_COMMITS: `${N8N_BASE_URL}/sync-commits`,
   SCAN_DEPS: `${N8N_BASE_URL}/scan-deps`,
   ANALYZE_DEADCODE: `${N8N_BASE_URL}/analyze-deadcode`,
