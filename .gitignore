@@ -29,3 +29,4 @@ dist-ssr
 branchy-dashboard-temp/
 
 /src/generated/prisma
+n8n-workflows/
