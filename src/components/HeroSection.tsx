@@ -34,7 +34,7 @@ const HeroSection = () => {
                 </div>
                 
                 <img 
-                  src="/dashboard.png" 
+                  src="/DASHBOARD.png" 
                   alt="Branchy Dashboard Preview" 
                   className="w-full h-auto opacity-95 group-hover:opacity-100 transition-opacity"
                 />
