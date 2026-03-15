@@ -242,28 +242,75 @@ export default function ConnectModal({ onDismiss }: ConnectModalProps) {
       .catch(() => setReposLoading(false));
   }, [session]);
 
-  // ── Task runner (Progress Simulation) ────────────────
-  const [progress, setProgress] = useState(0);
+  // ── Task runner (n8n Polling) ────────────────
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  const runTasks = useCallback(async (jobIdVal: string) => {
+    if (runningRef.current) return;
+    runningRef.current = true;
+
+    let taskList = INITIAL_TASKS.map((t) => ({ ...t }));
+    let completedInUI = 0;
+
+    // We animate the UI tasks while polling in the background
+    intervalRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`${N8N_WEBHOOKS.GET_STATUS}?jobId=${jobIdVal}`);
+        const data = await res.json();
+
+        if (data.status === 'COMPLETED' || data.status === 'FAILED') {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          intervalRef.current = null;
+          
+          // Complete remaining UI tasks quickly
+          for (let i = completedInUI; i < taskList.length; i++) {
+            taskList[i].status = data.status === 'COMPLETED' ? 'complete' : 'error';
+            setTasks([...taskList]);
+            await new Promise(r => setTimeout(r, 100));
+          }
+
+          if (data.status === 'COMPLETED' && data.analysisResult) {
+            const result = data.analysisResult as AnalysisResult;
+            setRealResult(result);
+            setAnalysisStats({
+              files: result.filesCount,
+              healthScore: result.healthScore,
+              issues: result.healthReport?.issues?.length || 0,
+            });
+            
+            await new Promise((r) => setTimeout(r, 600));
+            setStepTransitionKey((k) => k + 1);
+            setStep('complete');
+          } else {
+            // Handle error state in UI if needed
+          }
+          runningRef.current = false;
+        } else {
+          // Progress simulation
+          if (completedInUI < taskList.length - 1) {
+             taskList[completedInUI].status = 'complete';
+             completedInUI++;
+             taskList[completedInUI].status = 'running';
+             setTasks([...taskList]);
+          }
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
+      }
+    }, 2000);
+  }, []);
 
   // ── Transition to step 2 ─────────────────────
   const handleAnalyze = async () => {
     if (!selectedRepo || !session?.provider_token) return;
     setStepTransitionKey((k) => k + 1);
     setStep('analyzing');
-    setProgress(0);
-
-    // Progress simulation
-    const taskList = INITIAL_TASKS.map((t) => ({ ...t }));
-    let completedInUI = 0;
-    const progressInterval = setInterval(() => {
-      if (completedInUI < taskList.length - 1) {
-        taskList[completedInUI].status = 'complete';
-        completedInUI++;
-        taskList[completedInUI].status = 'running';
-        setTasks([...taskList]);
-        setProgress((completedInUI / taskList.length) * 100);
-      }
-    }, 1500);
 
     try {
       const res = await fetch(N8N_WEBHOOKS.ANALYZE_REPO, {
@@ -276,35 +323,12 @@ export default function ConnectModal({ onDismiss }: ConnectModalProps) {
           token: session.provider_token,
         }),
       });
-      
       const data = await res.json();
-      clearInterval(progressInterval);
-
-      if (data.analysisResult) {
-        // Complete remaining UI tasks quickly
-        for (let i = completedInUI; i < taskList.length; i++) {
-          taskList[i].status = 'complete';
-          setTasks([...taskList]);
-        }
-        setProgress(100);
-
-        const result = data.analysisResult as AnalysisResult;
-        setRealResult(result);
-        setAnalysisStats({
-          files: result.filesCount,
-          healthScore: result.healthScore,
-          issues: result.healthReport?.issues?.length || 0,
-        });
-        
-        await new Promise((r) => setTimeout(r, 600));
-        setStepTransitionKey((k) => k + 1);
-        setStep('complete');
-      } else {
-        // Fallback or Handle Error
-        console.error('No analysisResult returned');
+      if (data.jobId) {
+        setJobId(data.jobId);
+        runTasks(data.jobId);
       }
     } catch (err) {
-      clearInterval(progressInterval);
       console.error('Failed to start analysis:', err);
     }
   };
