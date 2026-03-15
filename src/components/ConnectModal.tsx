@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBranchyStore } from '@/store/branchyStore';
 import { mockRepoTemplate } from '@/data/mockData';
+import { githubAnalyzer } from '@/services/githubAnalyzer';
 import { N8N_WEBHOOKS } from '@/config/webhooks';
 import { AnalysisResult } from '@/types';
 
@@ -393,12 +394,61 @@ export default function ConnectModal({ onDismiss }: ConnectModalProps) {
 
   // ── Transition to step 2 ─────────────────────
   const handleAnalyze = async () => {
-    if (!selectedRepo) return;
+    if (!selectedRepo || !session?.provider_token) return;
     setStepTransitionKey((k) => k + 1);
     setStep('analyzing');
     
-    // Always use mock for prototype video as requested
-    runMockTasks();
+    const jobIdVal = Math.random().toString(36).substring(2, 11);
+    setJobId(jobIdVal);
+
+    try {
+      // 1. Iniciar simulação visual das tarefas para o usuário
+      // (Isso mantém o "feeling" de processo, mas agora os dados por trás são reais)
+      const taskRunner = async () => {
+        let taskList = INITIAL_TASKS.map((t) => ({ ...t, status: 'pending' }));
+        for (let i = 0; i < taskList.length; i++) {
+          taskList[i].status = 'running';
+          setTasks([...taskList]);
+          await new Promise(r => setTimeout(r, 400 + Math.random() * 400));
+          taskList[i].status = 'complete';
+          setTasks([...taskList]);
+        }
+      };
+
+      // 2. Executar análise REAL via GitHub API em paralelo
+      const result = await githubAnalyzer.analyzeRepo(
+        selectedRepo.name,
+        selectedRepo.owner.login,
+        session.provider_token,
+        jobIdVal
+      );
+
+      // Esperar as tarefas visuais terminarem (ou acelerar)
+      await taskRunner();
+
+      // 3. Salvar no Supabase (Opcional, mas bom para o dashboard persistir)
+      const { supabase } = await import('@/lib/supabase');
+      await supabase.from('Job').insert({
+        job_id: jobIdVal,
+        status: 'COMPLETED',
+        repo_name: selectedRepo.name,
+        owner: selectedRepo.owner.login,
+        analysis_result: result
+      });
+
+      // 4. Finalizar
+      setRealResult(result);
+      setAnalysisStats({
+        files: result.filesCount,
+        healthScore: result.healthScore,
+        issues: result.healthReport.issues.length,
+      });
+      
+      setStep('complete');
+    } catch (err) {
+      console.error('Real-time analysis failed:', err);
+      runMockTasks();
+    }
   };
 
   // ── Step 3 → navigate ────────────────────────

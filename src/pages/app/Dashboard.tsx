@@ -2,14 +2,33 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBranchyStore } from '@/store/branchyStore';
 import { timeAgo, getScoreBg } from '@/lib/branchy-utils';
+import { repoService } from '@/services/repoService';
+import type { AnalysisResult } from '@/types';
 
 type Filter = 'all' | 'issues' | 'outdated';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
   const repos = useBranchyStore((s) => s.repos);
+  const setRepos = useBranchyStore((s) => s.setRepos);
   const [search, setSearch] = useState('');
   const [deferredSearch, setDeferredSearch] = useState('');
+
+  useEffect(() => {
+    const loadRepos = async () => {
+      const liveRepos = await repoService.getAllAnalyses();
+      if (liveRepos.length > 0) {
+        const reposRecord: Record<string, AnalysisResult> = {};
+        liveRepos.forEach(r => { 
+          reposRecord[r.repoId] = r; 
+        });
+        // We can choose to merge or replace. 
+        // Given "sem dados ficticios", we replace or merge but prioritize real ones.
+        setRepos(reposRecord);
+      }
+    };
+    loadRepos();
+  }, [setRepos]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

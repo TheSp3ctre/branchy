@@ -10,6 +10,7 @@ interface BranchyStore {
   analysisError: boolean;
   recentRepos: RecentRepo[];
   addRepo: (result: AnalysisResult) => void;
+  setRepos: (repos: Record<string, AnalysisResult>) => void;
   setCurrentRepo: (id: string | null) => void;
   setAnalyzing: (v: boolean) => void;
   setAnalysisError: (v: boolean) => void;
@@ -34,6 +35,7 @@ export const useBranchyStore = create<BranchyStore>()(
         set((state) => ({
           repos: { ...state.repos, [result.repoId]: result },
         })),
+      setRepos: (repos) => set({ repos }),
       setCurrentRepo: (id) => set({ currentRepoId: id }),
       setAnalyzing: (v) => set({ isAnalyzing: v }),
       setAnalysisError: (v) => set({ analysisError: v }),
