@@ -14,6 +14,22 @@
 [![AI](https://img.shields.io/badge/AI-claude%20%2B%20gemini-orange?style=flat-square)](/)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](/)
 
+<br/>
+<br/>
+
+<table border="0">
+  <tr>
+    <td align="center">
+      <img src="https://i.imgur.com/lPzcqMU.png" width="100px;" alt="Matheus Braga" style="border-radius: 50%;"/><br>
+      <sub><b>Matheus Braga</b></sub>
+    </td>
+    <td align="center">
+      <img src="https://i.imgur.com/hZB0D8e.png" width="100px;" alt="Barbara Lopes" style="border-radius: 50%;"/><br>
+      <sub><b>Barbara Lopes</b></sub>
+    </td>
+  </tr>
+</table>
+
 </div>
 
 ---
@@ -153,23 +169,6 @@ src/
 
 prisma/                  # Schema do banco de dados
 ```
-
----
-
-## 👥 Equipe
-
-<table border="0">
-  <tr>
-    <td align="center">
-      <img src="https://i.imgur.com/lPzcqMU.png" width="150px;" alt="Matheus Braga"/><br>
-      <sub><b>Matheus Braga</b></sub>
-    </td>
-    <td align="center">
-      <img src="https://i.imgur.com/hZB0D8e.png" width="150px;" alt="Barbara Lopes"/><br>
-      <sub><b>Barbara Lopes</b></sub>
-    </td>
-  </tr>
-</table>
 
 ---
 
