@@ -25,25 +25,38 @@ function FloatingPaths({ position }: { position: number }) {
                 fill="none"
             >
                 <title>Background Paths</title>
+                <defs>
+                    <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="1.5" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                    <filter id="neon-bloom" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="4" result="blur" />
+                        <feColorMatrix type="matrix" values="0 0 0 0 0.2  0 0 0 0 0.9  0 0 0 0 0.6  0 0 0 1 0" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                </defs>
                 {paths.map((path) => (
-                    <motion.path
-                        key={path.id}
-                        d={path.d}
-                        stroke="currentColor"
-                        strokeWidth={path.width}
-                        strokeOpacity={0.2 + path.id * 0.05}
-                        initial={{ pathLength: 0.3, opacity: 0.8 }}
-                        animate={{
-                            pathLength: 1,
-                            opacity: [0.4, 0.8, 0.4],
-                            pathOffset: [0, 1, 0],
-                        }}
-                        transition={{
-                            duration: 20 + Math.random() * 10,
-                            repeat: Number.POSITIVE_INFINITY,
-                            ease: "linear",
-                        }}
-                    />
+                    <g key={path.id} filter="url(#neon-bloom)">
+                        <motion.path
+                            d={path.d}
+                            stroke="currentColor"
+                            strokeWidth={path.width}
+                            strokeOpacity={0.3 + path.id * 0.05}
+                            initial={{ pathLength: 0.3, opacity: 0.8 }}
+                            animate={{
+                                pathLength: 1,
+                                opacity: [0.5, 1, 0.5],
+                                pathOffset: [0, 1, 0],
+                            }}
+                            transition={{
+                                duration: 20 + Math.random() * 10,
+                                repeat: Number.POSITIVE_INFINITY,
+                                ease: "linear",
+                            }}
+                            className="drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]"
+                        />
+                    </g>
                 ))}
             </svg>
         </div>
