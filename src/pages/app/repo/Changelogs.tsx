@@ -2,12 +2,15 @@ import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { timeAgo } from '@/lib/branchy-utils';
 import { changelogService, RepoCommit } from '@/services/changelog';
-import { n8nService } from '@/services/n8n';
 import { useAuth } from '@/contexts/AuthContext';
+import { githubAnalyzer } from '@/services/githubAnalyzer';
+import { useBranchyStore } from '@/store/branchyStore';
 
 export default function ChangelogsPage() {
   const { repoId } = useParams<{ repoId: string }>();
-  const { user } = useAuth();
+  const repo = useBranchyStore((s) => (repoId ? s.repos[repoId] : null));
+  const addRepo = useBranchyStore((s) => s.addRepo);
+  const { session, user } = useAuth();
   const [commits, setCommits] = useState<RepoCommit[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -16,8 +19,7 @@ export default function ChangelogsPage() {
     if (!repoId) return;
     try {
       setLoading(true);
-      const userName = user?.user_metadata?.full_name || user?.user_metadata?.user_name;
-      const data = await changelogService.getCommits(repoId, userName);
+      const data = await changelogService.getCommits(repoId);
       setCommits(data);
     } catch (err) {
       console.error('Failed to fetch commits:', err);
@@ -27,11 +29,18 @@ export default function ChangelogsPage() {
   };
 
   const handleSync = async () => {
-    if (!repoId) return;
+    if (!repoId || !repo || !session?.provider_token) return;
     try {
       setRefreshing(true);
-      await n8nService.syncCommits(repoId);
-      await fetchCommits();
+      // Re-analisar localmente para pegar commits novos
+      const result = await githubAnalyzer.analyzeRepo(
+        repo.repoName,
+        repo.owner,
+        session.provider_token,
+        repoId
+      );
+      addRepo(result);
+      setCommits(result.changelogs.map(c => ({ ...c, repoId, createdAt: result.analyzedAt })) as RepoCommit[]);
     } catch (err) {
       console.error('Sync failed:', err);
     } finally {

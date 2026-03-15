@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { useBranchyStore } from '@/store/branchyStore';
 import { Download, Sparkles, User, Shield, Briefcase, RefreshCw, Loader2, FileText, ChevronRight } from 'lucide-react';
 import { onboardingService, OnboardingGuide } from '@/services/onboarding';
+import { githubAnalyzer } from '@/services/githubAnalyzer';
+import { useAuth } from '@/contexts/AuthContext';
 import ReactMarkdown from 'react-markdown';
 import mermaid from 'mermaid';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,6 +14,8 @@ type Persona = 'developer' | 'stakeholder' | 'auditor';
 export default function OnboardingPage() {
   const { repoId } = useParams<{ repoId: string }>();
   const repo = useBranchyStore((s) => (repoId ? s.repos[repoId] : null));
+  const addRepo = useBranchyStore((s) => s.addRepo);
+  const { session } = useAuth();
   
   const [guide, setGuide] = useState<OnboardingGuide | null>(null);
   const [persona, setPersona] = useState<Persona>('developer');
@@ -51,10 +55,16 @@ export default function OnboardingPage() {
   }, [guide]);
 
   const handleGenerate = async () => {
-    if (!repoId) return;
+    if (!repoId || !repo || !session?.provider_token) return;
     try {
       setGenerating(true);
-      await onboardingService.generate(repoId, persona);
+      const result = await githubAnalyzer.analyzeRepo(
+        repo.repoName,
+        repo.owner,
+        session.provider_token,
+        repoId
+      );
+      addRepo(result);
       await fetchGuide();
     } catch (err) {
       console.error('Generation failed:', err);

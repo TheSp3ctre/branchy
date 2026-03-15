@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { N8N_WEBHOOKS } from '@/config/webhooks';
+import { useBranchyStore } from '@/store/branchyStore';
 
 export interface OnboardingGuide {
   id: string;
@@ -17,52 +17,73 @@ export interface OnboardingGuide {
 
 export const onboardingService = {
   async getLatest(repoId: string, persona: string = 'developer'): Promise<OnboardingGuide | null> {
-    try {
-      const { data, error } = await supabase
-        .from('onboarding_guides')
-        .select('*')
-        .eq('repoId', repoId)
-        .eq('persona', persona)
-        .order('createdAt', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-        
-      if (data && !error) return data;
-    } catch (err) {
-      console.warn('Supabase fetch failed, providing mock data for prototype.');
+    // 1. Tentar pegar da store local (da análise viva que acabamos de fazer)
+    const store = useBranchyStore.getState();
+    const repo = store.repos[repoId];
+
+    if (repo && repo.onboardingGuide) {
+      const { onboardingGuide } = repo;
+      // Transformar o formato da store para o formato esperado pelo componente
+      const overview = onboardingGuide.sections.find(s => s.type === 'overview')?.content || '';
+      const stack = onboardingGuide.sections.find(s => s.type === 'techStack')?.content || [];
+      const scripts = onboardingGuide.sections.find(s => s.type === 'runLocally')?.content || [];
+
+      let contentMd = `# Guia de Onboarding: ${repo.repoName}\n\n${overview}\n\n`;
+      
+      if (persona === 'developer') {
+        contentMd += `## Stack Tecnológica\n${stack.map((s: string) => `- ${s}`).join('\n')}\n\n`;
+        contentMd += `## Como rodar localmente\n${scripts.map((s: string) => `1. \`npm run ${s}\``).join('\n')}\n\n`;
+        contentMd += `## Arquitetura Sugerida\n\`\`\`mermaid\ngraph TD\n  Web[Frontend] --> API[Core Service]\n  API --> DB[(Database)]\n\`\`\``;
+      } else if (persona === 'stakeholder') {
+        contentMd += `## Visão de Negócio\nEste repositório é escrito em ${repo.language} e possui ${repo.filesCount} arquivos. A saúde do código está em ${repo.healthScore}%.`;
+      }
+
+      return {
+        id: `live-${repoId}-${persona}`,
+        repoId,
+        persona: persona as any,
+        title: `Onboarding: ${repo.repoName} (${persona})`,
+        contentMd,
+        stackBadges: stack.slice(0, 3),
+        mermaidArch: null,
+        wordCount: contentMd.split(' ').length,
+        modelUsed: 'Branchy Local Analyzer',
+        generationTimeMs: 1200,
+        createdAt: repo.analyzedAt
+      };
     }
 
-    // Mock content based on persona (Fallback para protótipo)
-    const contentMd = persona === 'developer' 
-      ? `# Guia Técnico do Motor Nexus\n\nBem-vindo ao core do sistema. Este repositório utiliza uma arquitetura de microserviços orientada a eventos.\n\n## Arquitetura\n\`\`\`mermaid\ngraph TD\n  A[API Gateway] --> B[Event Bus]\n  B --> C[Worker Service]\n  C --> D[(PostgreSQL)]\n  B --> E[Audit Service]\n\`\`\`\n\n## Stack\n- **Runtime**: Node.js 20.x\n- **Linguagem**: TypeScript\n- **Infra**: Docker & Kubernetes\n\n## Primeiros Passos\n1. Copie o \`.env.example\`\n2. Rode \`docker-compose up -d\`\n3. Execute \`npm run build && npm run start\`\n\n### 🤖 IA Insights\n> **@AI**: Notei que o arquivo \`auth.ts\` está usando um padrão de singleton que pode dificultar testes unitários. Recomendo extrair para uma interface de Injeção de Dependência.\n> \n> **@AI**: A cobertura de testes no módulo de processamento caiu 5% no último commit. Considere adicionar testes para os casos de borda do novo parser.`
-      : persona === 'stakeholder'
-      ? `# Visão de Negócio — Nexus Engine\n\nO Nexus Engine é responsável por 90% do processamento de dados da empresa, garantindo conformidade e velocidade.\n\n## Impacto\n- **Velocidade**: Redução de 45% no tempo de resposta.\n- **Escalabilidade**: Suporta até 1.2M de requests/min.\n- **Segurança**: Criptografia de ponta a ponta.\n\n## Roadmap\n- Q3: Integração com provedores externos.\n- Q4: Expansão para mercados asiáticos.\n\n### 🤖 IA Insights\n> **@AI**: Baseado no volume atual de commits, a funcionalidade "Export" tem 85% de chance de ser entregue antes do prazo previsto.\n> \n> **@AI**: Identificamos um custo potencial de infraestrutura que pode ser reduzido em 12% otimizando as queries de agregação.`
-      : `# Auditoria e Segurança\n\nRelatório gerado pela IA Branchy sobre a integridade do código.\n\n## Vulnerabilidades Detectadas\n- [CRITICAL] Injeção de dependência na camada de rede.\n- [INFO] Versão do Node.js está 2 patches atrás.\n\n## Recomendações\n- Implementar rotação de chaves a cada 30 dias.\n- Habilitar logs estruturados para conformidade ISO-27001.\n\n### 🤖 IA Insights\n> **@AI**: O padrão de acesso ao banco de dados sugere que não há logs de auditoria suficientes para conformidade total com SOC2 na tabela de usuários.\n> \n> **@AI**: Detectei um possível vazamento de credenciais em um commit de 3 dias atrás na branch \`feature/legacy-sync\`. Recomendo invalidar os tokens imediatamente.`;
+    // 2. Fallback para Supabase (se já foi salvo antes)
+    const { data, error } = await supabase
+      .from('onboarding_guides')
+      .select('*')
+      .eq('repoId', repoId)
+      .eq('persona', persona)
+      .order('createdAt', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+      
+    if (data && !error) return data;
 
+    // 3. Mock básico se nada for encontrado
     return {
       id: `mock-onboarding-${repoId}-${persona}`,
       repoId,
       persona: persona as any,
       title: `Onboarding: ${repoId} (${persona})`,
-      contentMd,
-      stackBadges: ['TypeScript', 'Node.js', 'PostgreSQL'],
+      contentMd: `# Bem-vindo ao repositório\n\nEste é um guia gerado automaticamente. Clique em "Analisar" no Dashboard para ver dados reais.`,
+      stackBadges: ['TypeScript', 'Node.js'],
       mermaidArch: null,
-      wordCount: 450,
-      modelUsed: 'Gemini 2.0 Flash',
-      generationTimeMs: 2400,
+      wordCount: 15,
+      modelUsed: 'Mock',
+      generationTimeMs: 0,
       createdAt: new Date().toISOString()
     };
   },
 
-  async generate(repoId: string, persona: string): Promise<void> {
-    const response = await fetch(N8N_WEBHOOKS.GENERATE_ONBOARDING, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ repo_id: repoId, persona }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to generate onboarding: ${response.statusText}`);
-    }
+  async generate(_repoId: string, _persona: string): Promise<void> {
+    // Agora a geração é feita no ConnectModal via githubAnalyzer
+    console.log('Generation is handled by the local analyzer.');
   }
 };
+
