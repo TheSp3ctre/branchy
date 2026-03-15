@@ -156,6 +156,22 @@ prisma/                  # Schema do banco de dados
 
 ---
 
+## 👥 Equipe
+
+<table border="0">
+  <tr>
+    <td align="center">
+      <img src="https://i.imgur.com/lPzcqMU.png" width="150px;" alt="Matheus Braga"/><br>
+      <sub><b>Matheus Braga</b></sub>
+    </td>
+    <td align="center">
+      <img src="https://i.imgur.com/hZB0D8e.png" width="150px;" alt="Barbara Lopes"/><br>
+      <sub><b>Barbara Lopes</b></sub>
+    </td>
+  </tr>
+</table>
+
+---
 
 ## 📄 Licença
 
