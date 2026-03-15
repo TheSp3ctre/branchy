@@ -1,12 +1,3 @@
-const terminalLines = [
-  { text: "$ branchy analyze acme-corp/payments-api", color: "text-foreground" },
-  { text: "→ scanning 247 files...", color: "text-muted-foreground" },
-  { text: "✓ architecture map generated", color: "text-primary" },
-  { text: "⚠ 6 circular dependencies detected", color: "text-accent-yellow" },
-  { text: "! 3 modules with no active consumers", color: "text-destructive" },
-  { text: "✓ onboarding guide ready — 38s", color: "text-primary" },
-];
-
 const HeroSection = () => {
   return (
     <section className="pt-[100px] md:pt-[132px] pb-12 md:pb-16 px-4 md:px-12 border-b border-border text-center">
@@ -25,18 +16,27 @@ const HeroSection = () => {
         </button>
       </div>
 
-      <div className="max-w-[640px] mx-auto bg-surface border border-border-subtle rounded-lg p-5 text-left">
-        <div className="flex gap-1.5 mb-4">
-          <div className="w-3 h-3 rounded-full bg-destructive" />
-          <div className="w-3 h-3 rounded-full bg-accent-yellow" />
-          <div className="w-3 h-3 rounded-full bg-primary" />
-        </div>
-        <div className="space-y-1">
-          {terminalLines.map((line, i) => (
-            <p key={i} className={`font-mono text-[12px] md:text-[13px] ${line.color}`}>
-              {line.text}
-            </p>
-          ))}
+      <div className="relative max-w-[840px] mx-auto mt-12 mb-4 group">
+        {/* Glow effect */}
+        <div className="absolute -inset-1 bg-gradient-to-r from-b-green/20 to-b-blue/20 rounded-xl blur-xl opacity-50 group-hover:opacity-75 transition duration-1000 group-hover:duration-200" />
+        
+        <div className="relative bg-b-surface border border-b-border/50 rounded-xl overflow-hidden shadow-2xl transform transition-all duration-500 hover:scale-[1.01]">
+          {/* Dashboard Header Bar */}
+          <div className="h-8 bg-b-elevated border-b border-b-border/30 flex items-center px-4 gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-b-red/30" />
+            <div className="w-2.5 h-2.5 rounded-full bg-b-yellow/30" />
+            <div className="w-2.5 h-2.5 rounded-full bg-b-green/30" />
+            <div className="ml-4 font-mono text-[10px] text-b-text-ghost">Branchy Dashboard — payments-api</div>
+          </div>
+          
+          <img 
+            src="https://i.imgur.com/uRovbI5.png" 
+            alt="Branchy Dashboard Preview" 
+            className="w-full h-auto opacity-95 group-hover:opacity-100 transition-opacity"
+          />
+          
+          {/* Reflection overlay */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent pointer-events-none" />
         </div>
       </div>
     </section>
