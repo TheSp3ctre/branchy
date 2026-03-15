@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useBranchyStore } from '@/store/branchyStore';
-import { Trash2, RefreshCw, Bell, ShieldAlert, Globe, Unlink, Check, AlertTriangle, Loader2, Plus, Settings2, ExternalLink, Download } from 'lucide-react';
+import { Trash2, RefreshCw, Bell, ShieldAlert, Globe, Unlink, Check, AlertTriangle, Loader2, Plus, Settings2, ExternalLink, Download, Slack } from 'lucide-react';
 import { repoSettingsService, RepoSettings } from '@/services/repoSettings';
 import { integrationsService, RepoIntegration } from '@/services/integrations';
 import { exportService } from '@/services/exportService';
@@ -115,12 +115,12 @@ export default function RepoSettingsPage() {
 
   return (
     <div className="p-8 max-w-[720px] mx-auto">
-      <div className="flex gap-4 mb-10 border-b-[0.5px] border-b-border pb-4 overflow-x-auto scrollbar-none">
+      <div className="flex flex-wrap gap-4 mb-10 border-b-[0.5px] border-b-border pb-4">
         {tabs.map((t) => (
           <button
             key={t.value}
             onClick={() => setActiveTab(t.value)}
-            className={`flex items-center gap-2 font-mono text-[12px] px-4 py-2 rounded-btn transition-all whitespace-nowrap ${
+            className={`flex items-center gap-2 font-mono text-[12px] px-4 py-2 rounded-btn transition-all ${
               activeTab === t.value
                 ? 'bg-white text-black font-bold'
                 : 'text-b-text-ghost hover:text-white'
@@ -196,8 +196,18 @@ export default function RepoSettingsPage() {
                   <div key={provider} className="bg-b-card border border-b-border rounded-card p-5 group hover:border-b-text-ghost transition-all">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-b-surface flex items-center justify-center rounded-card border border-b-border">
-                          <img src={`/integrations/${provider}.svg`} alt={provider} className="w-5 h-5 opacity-80" />
+                        <div className="w-10 h-10 bg-b-surface flex items-center justify-center rounded-card border border-b-border p-2">
+                          {provider === 'slack' && <Slack size={20} className="text-[#E01E5A]" />}
+                          {provider === 'jira' && (
+                            <svg viewBox="0 0 24 24" fill="#0052CC" className="w-full h-full">
+                              <path d="M11.53 2c0 2.456-1.991 4.447-4.446 4.447H2V2h9.53zm0 10.47c0 2.456-1.991 4.447-4.446 4.447H2V12.47h9.53zm10.47-5.235c0 2.456-1.991 4.447-4.447 4.447h-5.083V7.235H22zm0 10.47c0 2.456-1.991 4.447-4.447 4.447h-5.083v-4.447H22z" />
+                            </svg>
+                          )}
+                          {provider === 'notion' && (
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full text-white">
+                              <path d="M4.459 4.208c.551.314.938.834 1.109 1.458v13.6c0 .484-.258.932-.676 1.176l-1.071.624L2 21.066l1.328-1.554 1.114-.648V6.264l-.99-.576L2 4.208l2.459.0zM22 6.046V18.12c0 .546-.307 1.045-.8 1.285l-1.071.624-1.817.106 1.328-1.554 1.114-.648V7.558l-8.627 5.01-4.041-2.352 8.627-5.01-4.042-2.352-8.627 5.01L5.328 6.42l8.627-5.01L18 3.75l4 2.296z" />
+                            </svg>
+                          )}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
