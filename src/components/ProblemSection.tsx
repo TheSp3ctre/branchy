@@ -16,7 +16,7 @@ const ProblemSection = () => {
     <section className="py-[72px] px-6 md:px-12 border-b border-border">
       <p className="font-mono text-[11px] text-ghost uppercase tracking-[0.1em] mb-4">// o problema</p>
       <h2 className="font-mono text-[22px] md:text-[28px] font-semibold text-white tracking-[-0.5px] mb-4">
-        A maior parte do trabalho de um dev não é criar. É decifrar.{" "}
+        conhecimento do código fica preso nas cabeças das pessoas, não no sistema.{" "}
       </h2>
       <p className="font-body text-[14px] text-hint max-w-[480px] leading-[1.7] mb-12">
         Pesquisas de campo mostram que a esmagadora maioria do tempo de um desenvolvedor profissional é gasta tentando entender código existente — não escrevendo código novo.

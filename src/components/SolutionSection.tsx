@@ -17,7 +17,7 @@ const SolutionSection = () => {
     <section className="py-[72px] px-6 md:px-12 border-b border-border">
       <p className="font-mono text-[11px] text-ghost uppercase tracking-[0.1em] mb-4">// a solução</p>
       <h2 className="font-mono text-[22px] md:text-[28px] font-semibold text-white tracking-[-0.5px] mb-4">
-        branchy. <span className="text-primary">legibilidade como infraestrutura.</span>
+        branchy <span className="text-primary">legibilidade É infraestrutura.</span>
       </h2>
       <p className="font-body text-[14px] text-hint max-w-[520px] leading-[1.7] mb-10">
         Não é documentação gerada por IA. É inteligência estrutural sobre o seu repositório — gerada direto do código, sem configuração manual.
