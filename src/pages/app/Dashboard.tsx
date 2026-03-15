@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBranchyStore } from '@/store/branchyStore';
 import { timeAgo, getScoreBg } from '@/lib/branchy-utils';
@@ -9,6 +9,15 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const repos = useBranchyStore((s) => s.repos);
   const [search, setSearch] = useState('');
+  const [deferredSearch, setDeferredSearch] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDeferredSearch(search);
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const [filter, setFilter] = useState<Filter>('all');
 
   const counts = useMemo(() => {
@@ -21,19 +30,18 @@ export default function DashboardPage() {
   }, [repos]);
 
   const repoList = useMemo(() => {
-    let list = Object.values(repos);
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter((r) => `${r.owner}/${r.repoName}`.toLowerCase().includes(q));
-    }
-    if (filter === 'issues') {
-      list = list.filter((r) => r.healthReport.issues.filter(i => !i.resolved).length > 0 || r.circularDeps.length > 0);
-    }
-    if (filter === 'outdated') {
-      list = list.filter((r) => Date.now() - new Date(r.analyzedAt).getTime() > 7 * 86400000);
-    }
-    return list;
-  }, [repos, search, filter]);
+    const list = Object.values(repos);
+    if (!deferredSearch && filter === 'all') return list;
+    
+    const q = deferredSearch.toLowerCase();
+    return list.filter((r) => {
+      const matchesSearch = !deferredSearch || `${r.owner}/${r.repoName}`.toLowerCase().includes(q);
+      const matchesFilter = filter === 'all' || 
+        (filter === 'issues' && (r.healthReport.issues.some(i => !i.resolved) || r.circularDeps.length > 0)) ||
+        (filter === 'outdated' && (Date.now() - new Date(r.analyzedAt).getTime() > 7 * 86400000));
+      return matchesSearch && matchesFilter;
+    });
+  }, [repos, deferredSearch, filter]);
 
   const filters: { label: string; value: Filter; count: number }[] = [
     { label: 'Todos', value: 'all', count: counts.all },

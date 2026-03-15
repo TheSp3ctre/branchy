@@ -25,10 +25,11 @@ export function getScoreBg(score: number): string {
   return 'bg-b-red-bg border-b-red-border text-b-red';
 }
 
-export function getSeverityColor(severity: 'critical' | 'warning' | 'info'): string {
-  if (severity === 'critical') return 'bg-b-red';
-  if (severity === 'warning') return 'bg-b-yellow';
-  return 'bg-b-blue';
+export function getSeverityColor(severity: string): string {
+  if (severity === 'critical' || severity === 'high') return 'bg-b-red';
+  if (severity === 'warning' || severity === 'medium') return 'bg-b-yellow';
+  if (severity === 'low') return 'bg-b-blue';
+  return 'bg-b-blue'; // info and others
 }
 
 export function getModuleColor(type: string) {

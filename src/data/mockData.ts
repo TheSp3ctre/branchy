@@ -160,30 +160,6 @@ export const mockRepos: Record<string, AnalysisResult> = {
       sections: [
         { title: 'Visão geral', type: 'overview', content: 'O frontend-v2 é a nova versão do frontend da Acme Corp, construído com React 18 e TypeScript. Utiliza um design system próprio e segue padrões modernos de arquitetura frontend.' },
         { title: 'Tech stack', type: 'techStack', content: [{ name: 'React 18', category: 'framework' }, { name: 'TypeScript', category: 'language' }, { name: 'Vite', category: 'build' }, { name: 'TailwindCSS', category: 'styling' }, { name: 'React Query', category: 'data' }, { name: 'Vitest', category: 'testing' }] },
-        { title: 'Estrutura do repositório', type: 'structure', content: [
-          { name: 'src/', description: 'Código fonte', children: [
-            { name: 'components/', description: 'Componentes reutilizáveis' },
-            { name: 'contexts/', description: 'React contexts' },
-            { name: 'layouts/', description: 'Layouts de página' },
-            { name: 'design/', description: 'Design system e tokens' },
-          ]},
-        ]},
-        { title: 'Módulos principais', type: 'modules', content: [
-          { name: 'AuthContext', path: 'src/contexts/auth.tsx', description: 'Gerenciamento de autenticação e sessão do usuário.' },
-          { name: 'DesignSystem', path: 'src/design/tokens.ts', description: 'Tokens de design e componentes base.' },
-        ]},
-        { title: 'Por onde começar', type: 'gettingStarted', content: [
-          { file: 'src/router/index.tsx', description: 'Entenda a estrutura de rotas da aplicação' },
-          { file: 'src/contexts/auth.tsx', description: 'Veja como a autenticação funciona' },
-        ]},
-        { title: 'Padrões comuns', type: 'patterns', content: [
-          { pattern: 'Context Pattern', code: 'const AuthContext = createContext<AuthState>()\nexport const useAuth = () => useContext(AuthContext)', description: 'Contextos para estado global' },
-        ]},
-        { title: 'Rodando localmente', type: 'runLocally', content: [
-          { step: 1, label: 'Clone', command: 'git clone https://github.com/acme-corp/frontend-v2.git', description: 'Clone o repositório' },
-          { step: 2, label: 'Instale', command: 'npm install', description: 'Instale as dependências' },
-          { step: 3, label: 'Execute', command: 'npm run dev', description: 'Inicie o servidor dev' },
-        ]},
       ],
     },
     healthReport: {
@@ -193,15 +169,70 @@ export const mockRepos: Record<string, AnalysisResult> = {
       documentation: 92,
       issues: [
         { id: 'fh1', severity: 'warning', fileName: 'data-grid.tsx', filePath: 'src/components/data-grid.tsx', title: 'Componente muito grande', description: 'O DataGrid tem 340 linhas e poderia ser dividido em subcomponentes menores.', suggestedFix: 'Extraia DataGridHeader, DataGridBody e DataGridPagination como componentes separados.', resolved: false },
-        { id: 'fh2', severity: 'info', fileName: 'auth.tsx', filePath: 'src/contexts/auth.tsx', title: 'Refresh token sem retry', description: 'O refresh de token não tenta novamente em caso de falha de rede.', suggestedFix: 'Adicione retry com exponential backoff no refresh de token.', resolved: false },
-        { id: 'fh3', severity: 'info', fileName: 'dashboard.tsx', filePath: 'src/layouts/dashboard.tsx', title: 'Layout sem skeleton loading', description: 'O layout do dashboard não mostra skeletons durante carregamento.', suggestedFix: 'Adicione componentes Skeleton para melhorar a experiência de carregamento.', resolved: false },
       ],
     },
     changelogs: [
       { id: 'fcl1', commitHash: '1a2b3c4', author: 'Lucas Oliveira', message: 'feat: implement new dashboard layout', date: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), filesChanged: 15, aiSummary: 'Novo layout do dashboard com sidebar colapsável e breadcrumb navigation.' },
-      { id: 'fcl2', commitHash: '5d6e7f8', author: 'Camila Souza', message: 'feat: add data grid component with sorting', date: new Date(Date.now() - 30 * 60 * 60 * 1000).toISOString(), filesChanged: 6, aiSummary: 'Componente DataGrid completo com ordenação, filtro e paginação server-side.' },
-      { id: 'fcl3', commitHash: '9g0h1i2', author: 'Lucas Oliveira', message: 'refactor: migrate to new design tokens', date: new Date(Date.now() - 54 * 60 * 60 * 1000).toISOString(), filesChanged: 22, aiSummary: 'Migração completa para o novo sistema de design tokens com suporte a temas.' },
     ],
+  },
+  'nexus-engine': {
+    repoId: 'nexus-engine',
+    repoName: 'nexus-engine',
+    owner: 'TheSp3ctre',
+    language: 'Go',
+    filesCount: 89,
+    healthScore: 94,
+    analyzedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+    modules: [
+      { id: 'n1', name: 'CoreEngine', type: 'core', filePath: 'internal/engine/core.go', loc: 1200, dependsOn: [], usedBy: ['n2'], summary: 'O coração do motor de processamento assíncrono.' },
+      { id: 'n2', name: 'TaskScheduler', type: 'service', filePath: 'internal/scheduler/scheduler.go', loc: 450, dependsOn: ['n1'], usedBy: [], summary: 'Agendador de tarefas com priorização dinâmica.' },
+    ],
+    insights: [
+      { type: 'success', text: 'Performance excepcional detectada no processamento de streams.' },
+      { type: 'info', text: 'Considere migrar para Go 1.21 para aproveitar as novas melhorias de runtime.' },
+    ],
+    complexityByFile: [],
+    circularDeps: [],
+    deadCode: [],
+    onboardingGuide: {
+      generatedAt: new Date().toISOString(),
+      sections: [{ title: 'Overview', type: 'overview', content: 'Motor de alta performance para processamento de eventos em larga escala.' }],
+    },
+    healthReport: { overallScore: 94, maintainability: 96, testCoverage: 92, documentation: 85, issues: [] },
+    changelogs: [
+      { id: 'ncl1', commitHash: 'b9d8e7f', author: 'TheSp3ctre', message: 'perf: optimize event loop latency', date: new Date().toISOString(), filesChanged: 3, aiSummary: 'Redução de 40% na latência do loop principal através de lock-free queues.' },
+    ],
+  },
+  'auth-service': {
+    repoId: 'auth-service',
+    repoName: 'auth-service',
+    owner: 'acme-corp',
+    language: 'Rust',
+    filesCount: 42,
+    healthScore: 65,
+    analyzedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    modules: [],
+    insights: [
+      { type: 'error', text: 'Vazamento de credenciais detectado em testes unitários.' },
+      { type: 'warning', text: 'Uso excessivo de "unsafe" blocks sem justificativa clara.' },
+    ],
+    complexityByFile: [],
+    circularDeps: [],
+    deadCode: [],
+    onboardingGuide: {
+      generatedAt: new Date().toISOString(),
+      sections: [{ title: 'Overview', type: 'overview', content: 'Serviço de autenticação e autorização RBAC.' }],
+    },
+    healthReport: {
+      overallScore: 65,
+      maintainability: 50,
+      testCoverage: 40,
+      documentation: 30,
+      issues: [
+        { id: 'ah1', severity: 'critical', fileName: 'lib.rs', filePath: 'src/lib.rs', title: 'Hardcoded secrets', description: 'Encontramos chaves de API expostas no código de testes.', suggestedFix: 'Use variáveis de ambiente ou um Secret Manager.', resolved: false },
+      ],
+    },
+    changelogs: [],
   },
 };
 

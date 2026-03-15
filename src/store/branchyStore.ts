@@ -27,6 +27,8 @@ export const useBranchyStore = create<BranchyStore>()(
       recentRepos: [
         { repoId: 'payments-api', repoUrl: 'acme-corp/payments-api', repoName: 'payments-api', owner: 'acme-corp', status: 'analyzed', analyzedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
         { repoId: 'frontend-v2', repoUrl: 'acme-corp/frontend-v2', repoName: 'frontend-v2', owner: 'acme-corp', status: 'analyzed', analyzedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString() },
+        { repoId: 'nexus-engine', repoUrl: 'TheSp3ctre/nexus-engine', repoName: 'nexus-engine', owner: 'TheSp3ctre', status: 'analyzed', analyzedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() },
+        { repoId: 'auth-service', repoUrl: 'acme-corp/auth-service', repoName: 'auth-service', owner: 'acme-corp', status: 'analyzed', analyzedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() },
       ],
       addRepo: (result) =>
         set((state) => ({

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import './ConnectModal.css';
 
 import { useNavigate } from 'react-router-dom';
@@ -341,7 +341,7 @@ export default function ConnectModal({ onDismiss }: ConnectModalProps) {
       setTasks([...taskList]);
       
       // Artificial delay for the video
-      const delay = TASK_DELAYS[taskList[i].id] || 1500;
+      const delay = (TASK_DELAYS[taskList[i].id] || 1500) * 0.4; // Made it 2.5x faster for smoother feel
       await new Promise(r => setTimeout(r, delay));
       
       // Complete task
@@ -350,25 +350,42 @@ export default function ConnectModal({ onDismiss }: ConnectModalProps) {
       setTasks([...taskList]);
     }
 
-    // Prepare mock final results
+    const randomHealthScore = 70 + Math.floor(Math.random() * 25);
+    const randomFilesCount = 50 + Math.floor(Math.random() * 500);
+
+    // Prepare mock final results with more randomization
     setRealResult({
       ...mockRepoTemplate,
       repoId: selectedRepo?.name || 'demo-repo',
       repoName: selectedRepo?.name || 'demo-repo',
       owner: selectedRepo?.owner.login || 'owner',
       language: selectedRepo?.language || 'TypeScript',
-      filesCount: 142,
-      healthScore: 88,
+      filesCount: randomFilesCount,
+      healthScore: randomHealthScore,
       analyzedAt: new Date().toISOString(),
+      healthReport: {
+        ...mockRepoTemplate.healthReport,
+        overallScore: randomHealthScore,
+        issues: mockRepoTemplate.healthReport.issues.map(iss => ({
+            ...iss,
+            id: `h-rnd-${Math.random().toString(36).substr(2, 9)}`
+        }))
+      },
+      insights: [
+        { type: 'info', text: `Repositório ${selectedRepo?.name} analisado com sucesso.` },
+        { type: 'success', text: 'Boa estrutura de diretórios detectada pela IA.' },
+        { type: 'warning', text: 'Algumas funções possuem muitos argumentos.', fileName: 'utils.ts' },
+        { type: 'error', text: 'Possível vazamento de memória em loop infinito detectado.', fileName: 'main.ts' }
+      ]
     });
 
     setAnalysisStats({
-      files: 142,
-      healthScore: 88,
-      issues: 12,
+      files: randomFilesCount,
+      healthScore: randomHealthScore,
+      issues: mockRepoTemplate.healthReport.issues.length,
     });
 
-    await new Promise((r) => setTimeout(r, 1000));
+    await new Promise((r) => setTimeout(r, 800));
     setStepTransitionKey((k) => k + 1);
     setStep('complete');
     runningRef.current = false;
@@ -413,9 +430,12 @@ export default function ConnectModal({ onDismiss }: ConnectModalProps) {
   const completedCount = tasks.filter((t) => t.status === 'complete').length;
   const progressPct = (completedCount / tasks.length) * 100;
 
-  const filteredRepos = repos.filter((r) =>
-    r.full_name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredRepos = useMemo(() => {
+    const q = search.toLowerCase();
+    return repos.filter((r) =>
+      r.full_name.toLowerCase().includes(q) || (r.language && r.language.toLowerCase().includes(q))
+    );
+  }, [repos, search]);
 
   if (!visible) return null;
 
@@ -506,7 +526,7 @@ export default function ConnectModal({ onDismiss }: ConnectModalProps) {
               {/* Search */}
               <input
                 type="text"
-                placeholder="buscar repositório..."
+                placeholder="buscar repositório ou tecnologia..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 style={{
@@ -525,7 +545,7 @@ export default function ConnectModal({ onDismiss }: ConnectModalProps) {
               />
 
               {/* Repo list */}
-              <div style={{ overflowY: 'auto', flex: 1, minHeight: 0, marginBottom: 16 }}>
+              <div style={{ overflowY: 'auto', flex: 1, minHeight: 0, marginBottom: 16, scrollbarWidth: 'none' }}>
                 {reposLoading
                   ? [1, 2, 3, 4].map((i) => <SkeletonRow key={i} />)
                   : filteredRepos.length === 0
@@ -625,6 +645,7 @@ export default function ConnectModal({ onDismiss }: ConnectModalProps) {
                     );
                   })}
               </div>
+
 
               {/* CTA */}
               <button
