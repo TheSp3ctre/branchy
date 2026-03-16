@@ -14,21 +14,21 @@ export default function DashboardPage() {
   const [search, setSearch] = useState('');
   const [deferredSearch, setDeferredSearch] = useState('');
 
-  useEffect(() => {
-    const loadRepos = async () => {
-      const liveRepos = await repoService.getAllAnalyses();
-      if (liveRepos.length > 0) {
-        const reposRecord: Record<string, AnalysisResult> = {};
-        liveRepos.forEach(r => { 
-          reposRecord[r.repoId] = r; 
-        });
-        // We can choose to merge or replace. 
-        // Given "sem dados ficticios", we replace or merge but prioritize real ones.
-        setRepos(reposRecord);
-      }
-    };
-    loadRepos();
-  }, [setRepos]);
+  // useEffect(() => {
+  //   const loadRepos = async () => {
+  //     const liveRepos = await repoService.getAllAnalyses();
+  //     if (liveRepos.length > 0) {
+  //       const reposRecord: Record<string, AnalysisResult> = {};
+  //       liveRepos.forEach(r => { 
+  //         reposRecord[r.repoId] = r; 
+  //       });
+  //       // We can choose to merge or replace. 
+  //       // Given "sem dados ficticios", we replace or merge but prioritize real ones.
+  //       setRepos(reposRecord);
+  //     }
+  //   };
+  //   loadRepos();
+  // }, [setRepos]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
